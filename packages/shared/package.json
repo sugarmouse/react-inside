@@ -2,9 +2,7 @@
   "name": "shared",
   "version": "0.0.1",
   "description": "shared function for the other packages",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "workspace": true,
   "keywords": [],
   "author": "",
   "license": "ISC"

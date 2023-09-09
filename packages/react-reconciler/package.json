@@ -3,8 +3,9 @@
   "version": "0.01",
   "description": " React's rendering system.",
   "module": "index.ts",
+  "workspace": true,
   "dependencies": {
-    "shared": "workspaces:*"
+    "shared": "link:../shared"
   },
   "keywords": [],
   "author": "",

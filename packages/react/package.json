@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "react public function",
   "module": "index.ts",
+  "workspace": true,
   "dependencies": {
     "shared": "workspaces:*"
   },
