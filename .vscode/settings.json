@@ -1,16 +1,20 @@
 {
+    "editor.tabSize": 2,
+    "editor.indentSize": "tabSize",
     "[javascript]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.tabSize": 2
     },
     "[typescriptreact]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2
     },
     "[javascriptreact]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2
     },
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
     /*先配置eslint*/
     "eslint.enable": true,
     "editor.codeActionsOnSave": { // 每次保存的时候将代码按eslint格式进行修复
