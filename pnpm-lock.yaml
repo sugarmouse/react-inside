@@ -60,6 +60,12 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2
 
+  packages/react-reconciler:
+    dependencies:
+      shared:
+        specifier: link:../shared
+        version: link:../shared
+
 packages:
 
   /@aashutoshrathi/word-wrap@1.2.6:
