@@ -67,4 +67,30 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 
 // 实际 raect 中 jsxDev 和 jsx 实现不同
 // jsxDev 中处理更多的检查为开发流程提供方便
-export const jsxDev = jsx;
+export const jsxDEV = (type: ElementType, config: any) => {
+  let key: Key = null;
+  const props: Props = {};
+  let ref: Ref = null;
+
+  for (const prop in config) {
+    const val = config[prop];
+    if (prop === 'key') {
+      if (val !== undefined) {
+        key = val.toStrng();
+      }
+      continue;
+    }
+
+    if (prop === 'ref') {
+      if (val !== undefined) {
+        ref = val;
+      }
+      continue;
+    }
+
+    if ({}.hasOwnProperty.call(config, prop)) {
+      props[prop] = val;
+    }
+  }
+  return ReactElement(type, key, ref, props);
+};
