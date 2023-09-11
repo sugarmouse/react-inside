@@ -1,14 +1,41 @@
 import { beginWork } from './beginWork';
 import { completeWork } from './completeWork';
-import { FiberNode } from './fiber';
+import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber';
+import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null;
 
-function prepareFreshStack(fiber: FiberNode) {
-  workInProgress = fiber;
+function prepareFreshStack(root: FiberRootNode) {
+  workInProgress = createWorkInProgress(root.current, {});
 }
 
-function renderRoot(root: FiberNode) {
+export function schduleUpdateOnFiber(fiber: FiberNode) {
+  // TODO shcdule function
+  const root = markUpdateFromFiberToRoot(fiber);
+  if (root === null) {
+    console.warn(
+      'schduleUpdateOnFiber error:can not find FiberRootNode, FiberRootNode is null'
+    );
+    return;
+  }
+  renderRoot(root);
+}
+
+// find FiberRootNode from the fiberNode passed in
+function markUpdateFromFiberToRoot(fiber: FiberNode) {
+  let node = fiber;
+  let parent = fiber.return;
+  while (parent !== null) {
+    node = parent;
+    parent = parent.return;
+  }
+  if (node.tag === HostRoot) {
+    return node.stateNode as FiberRootNode;
+  }
+  return null;
+}
+
+function renderRoot(root: FiberRootNode) {
   // initialize
   prepareFreshStack(root);
 
