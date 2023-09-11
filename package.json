@@ -22,11 +22,19 @@
     "eslint-plugin,": "link:@typescript-eslint/eslint-plugin,",
     "eslint-plugin-prettier": "^5.0.0",
     "husky": "^8.0.3",
+    "lint-staged": "^14.0.1",
     "prettier": "^3.0.3",
     "rimraf": "^5.0.1",
     "rollup": "^3.29.0",
     "rollup-plugin-generate-package-json": "^3.2.0",
     "rollup-plugin-typescript2": "^0.35.0",
     "typescript": "^5.2.2"
+  },
+  "lint-staged":{
+    "packages/**/*.{js,ts,jsx,tsx}": [
+      "prettier --write",
+      "eslint  --fix --quiet"
+    ]
   }
+
 }
