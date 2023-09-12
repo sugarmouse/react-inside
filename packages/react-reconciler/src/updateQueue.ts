@@ -35,10 +35,11 @@ export const enqueueUpdate = <State>(
   updateQueue.shared.pending = update;
 };
 
-// Process the update queue and return the memoized state.
+// Process the update queue and return the memoized state,
+// which is the the new state after the update.
 export const processUpdateQueue = <State>(
   baseState: State,
-  pendingUpdate: Update<State>
+  pendingUpdate: Update<State> | null
 ): { memoizedState: State } => {
   const result: ReturnType<typeof processUpdateQueue<State>> = {
     memoizedState: baseState
