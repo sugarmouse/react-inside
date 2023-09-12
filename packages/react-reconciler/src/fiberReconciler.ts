@@ -19,7 +19,9 @@ export function createContainer(container: Container) {
   return root;
 }
 
-//
+/**
+ * Updates the container with the given element and returns the updated element.
+ */
 export function updateContainer(
   element: ReactElementType | null,
   root: FiberRootNode
