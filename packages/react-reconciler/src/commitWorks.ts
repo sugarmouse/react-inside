@@ -56,10 +56,12 @@ function commitPlacement(finisdWork: FiberNode) {
   // get host parent
   const hostParent = getHostParent(finisdWork);
   // find finishedWork DOM and append to hostParent
-  appedPlacementNodeIntoContainer(finisdWork, hostParent);
+  if (hostParent !== null) {
+    appedPlacementNodeIntoContainer(finisdWork, hostParent);
+  }
 }
 
-function getHostParent(fiber: FiberNode): Container {
+function getHostParent(fiber: FiberNode): Container | null {
   let parent = fiber.return;
 
   while (parent) {
@@ -75,6 +77,7 @@ function getHostParent(fiber: FiberNode): Container {
   if (__DEV__) {
     console.warn('get host parent node failed');
   }
+  return null;
 }
 
 function appedPlacementNodeIntoContainer(
