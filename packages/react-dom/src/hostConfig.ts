@@ -1,4 +1,4 @@
-export type Container = any;
+export type Container = Element;
 
 export const createInstance = (...args: any) => {
   return {} as any;
