@@ -1,4 +1,5 @@
 import { beginWork } from './beginWork';
+import { commitMutationEffects } from './commitWorks';
 import { completeWork } from './completeWork';
 import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber';
 import { MutationMask, NoFlags } from './fiberFlags';
@@ -76,6 +77,7 @@ function commitRoot(root: FiberRootNode) {
     // beforeMutation
     // mutation Placement
 
+    commitMutationEffects(finishedWork);
     root.current = finishedWork; // 双缓存机制的 fiber 树切换
     // layout
   } else {
