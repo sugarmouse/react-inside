@@ -1,6 +1,7 @@
 import { beginWork } from './beginWork';
 import { completeWork } from './completeWork';
 import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber';
+import { MutationMask, NoFlags } from './fiberFlags';
 import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null;
@@ -53,7 +54,33 @@ function renderRoot(root: FiberRootNode) {
   } while (true);
   const finishedWork = root.current.alternate;
   root.finishedWork = finishedWork;
-  //TODO commitRoot(root);
+  commitRoot(root);
+}
+
+function commitRoot(root: FiberRootNode) {
+  const finishedWork = root.finishedWork;
+  root.finishedWork = null;
+
+  if (finishedWork === null) return;
+
+  if (__DEV__) {
+    console.warn('commit work starting...');
+  }
+
+  // 判断是否存在 3 个子阶段需要执行操作
+  const subtreeHasEffects =
+    (finishedWork.subTreeFlags & MutationMask) !== NoFlags;
+  const rootHasEffects = (finishedWork.flags & MutationMask) != NoFlags;
+
+  if (subtreeHasEffects || rootHasEffects) {
+    // beforeMutation
+    // mutation Placement
+
+    root.current = finishedWork; // 双缓存机制的 fiber 树切换
+    // layout
+  } else {
+    root.current = finishedWork;
+  }
 }
 
 function workLoop() {
