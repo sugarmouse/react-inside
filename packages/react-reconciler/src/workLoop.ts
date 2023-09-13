@@ -6,6 +6,7 @@ import { HostRoot } from './workTags';
 let workInProgress: FiberNode | null = null;
 
 function prepareFreshStack(root: FiberRootNode) {
+  //create hostROotFiber
   workInProgress = createWorkInProgress(root.current, {});
 }
 
@@ -50,6 +51,9 @@ function renderRoot(root: FiberRootNode) {
       workInProgress = null;
     }
   } while (true);
+  const finisedWork = root.current.alternate;
+  root.finishedWork = finisedWork;
+  //TODO commitRoot(root);
 }
 
 function workLoop() {

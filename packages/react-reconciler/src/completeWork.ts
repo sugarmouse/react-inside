@@ -5,6 +5,7 @@ import {
 } from 'hostConfig';
 import { FiberNode } from './fiber';
 import { HostComponent, HostRoot, HostText } from './workTags';
+import { ChildDeletion, NoFlags } from './fiberFlags';
 
 // dfs backward
 export const completeWork = (wip: FiberNode) => {
@@ -23,6 +24,7 @@ export const completeWork = (wip: FiberNode) => {
         appendAllChildren(instance, wip);
         wip.stateNode = instance;
       }
+      bubbleProperties(wip);
       return null;
     case HostText:
       if (current !== null && wip.stateNode) {
@@ -33,9 +35,11 @@ export const completeWork = (wip: FiberNode) => {
         const instance = createTextInstance(newProps.content);
         wip.stateNode = instance;
       }
+      bubbleProperties(wip);
       return null;
 
     case HostRoot:
+      bubbleProperties(wip);
       return null;
 
     default:
@@ -70,4 +74,24 @@ function appendAllChildren(parent: FiberNode, wip: FiberNode) {
     node.sibling.return = node;
     node = node.sibling;
   }
+}
+
+/**
+ * Calculates the bubble properties for a given FiberNode.
+ *
+ * @param {FiberNode} wip - The FiberNode to calculate bubble properties for.
+ */
+function bubbleProperties(wip: FiberNode) {
+  let subTreeFlags = NoFlags;
+  let child = wip.child;
+
+  while (child !== null) {
+    subTreeFlags |= child.subTreeFlags;
+    subTreeFlags |= child.flags;
+
+    child.return = wip;
+    child = child.sibling;
+  }
+
+  wip.subTreeFlags = subTreeFlags;
 }
