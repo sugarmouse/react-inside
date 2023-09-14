@@ -5,7 +5,7 @@ import {
   updateContainer
 } from 'react-reconciler/src/fiberReconciler';
 
-export function creatRoot(container: Container) {
+export function createRoot(container: Container) {
   const root = createContainer(container);
 
   return {

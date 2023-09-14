@@ -6,7 +6,7 @@ import {
 } from 'hostConfig';
 import { FiberNode } from './fiber';
 import { HostComponent, HostRoot, HostText } from './workTags';
-import { ChildDeletion, NoFlags } from './fiberFlags';
+import { NoFlags } from './fiberFlags';
 
 // dfs backward
 export const completeWork = (wip: FiberNode) => {

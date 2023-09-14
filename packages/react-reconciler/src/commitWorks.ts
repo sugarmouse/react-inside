@@ -57,7 +57,7 @@ function commitPlacement(finisdWork: FiberNode) {
   const hostParent = getHostParent(finisdWork);
   // find finishedWork DOM and append to hostParent
   if (hostParent !== null) {
-    appedPlacementNodeIntoContainer(finisdWork, hostParent);
+    appendPlacementNodeIntoContainer(finisdWork, hostParent);
   }
 }
 
@@ -80,22 +80,22 @@ function getHostParent(fiber: FiberNode): Container | null {
   return null;
 }
 
-function appedPlacementNodeIntoContainer(
+function appendPlacementNodeIntoContainer(
   finishedWork: FiberNode,
   container: Container
 ) {
   if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-    appendChildToContainer(finishedWork.stateNode, container);
+    appendChildToContainer(container, finishedWork.stateNode);
     return;
   }
 
   const child = finishedWork.child;
   if (child !== null) {
-    appedPlacementNodeIntoContainer(child, container);
+    appendPlacementNodeIntoContainer(child, container);
 
     const sibling = child.sibling;
     if (sibling !== null) {
-      appedPlacementNodeIntoContainer(sibling, container);
+      appendPlacementNodeIntoContainer(sibling, container);
     }
   }
 }

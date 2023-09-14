@@ -12,7 +12,7 @@ function prepareFreshStack(root: FiberRootNode) {
   workInProgress = createWorkInProgress(root.current, {});
 }
 
-export function schduleUpdateOnFiber(fiber: FiberNode) {
+export function scheduleUpdateOnFiber(fiber: FiberNode) {
   // TODO shcdule function
   const root = markUpdateFromFiberToRoot(fiber);
   if (root === null) {

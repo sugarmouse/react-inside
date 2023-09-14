@@ -8,7 +8,7 @@ import {
   createUpdateQueue,
   enqueueUpdate
 } from './updateQueue';
-import { schduleUpdateOnFiber } from './workLoop';
+import { scheduleUpdateOnFiber } from './workLoop';
 
 // create an instance of FiberRootNode,
 // which is the root node of all fiberNodes
@@ -33,6 +33,6 @@ export function updateContainer(
     udpate
   );
   // 连接更新流程与调度机制
-  schduleUpdateOnFiber(hostRootFiber);
+  scheduleUpdateOnFiber(hostRootFiber);
   return element;
 }
