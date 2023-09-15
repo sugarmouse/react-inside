@@ -5,7 +5,12 @@ import {
   createTextInstance
 } from 'hostConfig';
 import { FiberNode } from './fiber';
-import { HostComponent, HostRoot, HostText } from './workTags';
+import {
+  FunctionComponent,
+  HostComponent,
+  HostRoot,
+  HostText
+} from './workTags';
 import { NoFlags } from './fiberFlags';
 
 // dfs backward
@@ -49,6 +54,10 @@ export const completeWork = (wip: FiberNode) => {
       bubbleProperties(wip);
       return null;
 
+    case FunctionComponent:
+      bubbleProperties(wip);
+      return null;
+
     default:
       if (__DEV__) {
         console.warn(`completeWork unhandled fiber node: ${wip}`);
@@ -71,6 +80,7 @@ function appendAllChildren(parent: Container, wip: FiberNode) {
       // 也就是 react 内部节点，不在 host 环境中需要真实挂载的节点
       node.child.return = node;
       node = node.child;
+      continue;
     }
 
     if (node === wip) {

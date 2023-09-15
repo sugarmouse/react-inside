@@ -60,14 +60,13 @@ function renderRoot(root: FiberRootNode) {
 
 function commitRoot(root: FiberRootNode) {
   const finishedWork = root.finishedWork;
-  root.finishedWork = null;
 
   if (finishedWork === null) return;
 
   if (__DEV__) {
     console.warn('commit work starting...');
   }
-
+  root.finishedWork = null;
   // 判断是否存在 3 个子阶段需要执行操作
   const subtreeHasEffects =
     (finishedWork.subTreeFlags & MutationMask) !== NoFlags;
