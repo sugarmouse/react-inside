@@ -9,6 +9,9 @@ import { HostComponent, HostRoot, HostText } from './workTags';
 import { NoFlags } from './fiberFlags';
 
 // dfs backward
+/**
+ * 构建离屏 DOM 树（没有真实的在 host 环境中挂在，挂载在 commit 阶段）
+ */
 export const completeWork = (wip: FiberNode) => {
   //
   const newProps = wip.pendingProps;
@@ -40,6 +43,9 @@ export const completeWork = (wip: FiberNode) => {
       return null;
 
     case HostRoot:
+      // hostRoot 的对应的 host component 在
+      // (hostRoot.stataeNode as FiberRootNode).container 上
+      // 在 ReactDOM.createRoot().render() 阶段创建并且放在 fiberRootNode.container 上
       bubbleProperties(wip);
       return null;
 
@@ -51,6 +57,9 @@ export const completeWork = (wip: FiberNode) => {
   }
 };
 
+/**
+ * 调用 host 环境的 api，append 所有子节点
+ */
 function appendAllChildren(parent: Container, wip: FiberNode) {
   let node = wip.child;
 
@@ -58,6 +67,8 @@ function appendAllChildren(parent: Container, wip: FiberNode) {
     if (node?.tag === HostComponent || node?.tag === HostText) {
       appendInitialChild(parent, node?.stateNode);
     } else if (node.child !== null) {
+      // 为了过滤非 host 的节点
+      // 也就是 react 内部节点，不在 host 环境中需要真实挂载的节点
       node.child.return = node;
       node = node.child;
     }
@@ -72,13 +83,13 @@ function appendAllChildren(parent: Container, wip: FiberNode) {
       }
       node = node?.return;
     }
-    node.sibling.return = node;
+    node.sibling.return = node.return;
     node = node.sibling;
   }
 }
 
 /**
- * Calculates the bubble properties for a given FiberNode.
+ * 收集直接子节点的 flags 和 subTreeFlags 到当前节点的 subTreeFlags 属性上
  *
  * @param {FiberNode} wip - The FiberNode to calculate bubble properties for.
  */

@@ -11,7 +11,9 @@ export interface UpdateQueue<State> {
   };
 }
 
-// create an instance of 'update'
+/**
+ * 返回一个一个有 action 属性的对象，作为 update
+ */
 export const createUpdate = <State>(action: Action<State>) => {
   return {
     action
@@ -49,6 +51,8 @@ export const processUpdateQueue = <State>(
     if (action instanceof Function) {
       result.memoizedState = action(baseState);
     } else {
+      // react 启动阶段走这里，直接返回 action
+      // 此时的 action 指的是 ReactElement
       result.memoizedState = action;
     }
   }

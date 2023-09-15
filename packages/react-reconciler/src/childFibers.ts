@@ -7,6 +7,8 @@ import { Placement } from './fiberFlags';
 function ChildReconciler(shouldTrackEffects: boolean) {
   // ...
 
+  // 根据 ReactElement 创建 FiberNode
+  // 并且 return 指向父节点
   function reconcileSingleElement(
     returnFiber: FiberNode,
     currentFiber: FiberNode | null,
@@ -17,6 +19,8 @@ function ChildReconciler(shouldTrackEffects: boolean) {
     return fiber;
   }
 
+  // 根据 ReactElement HostText 创建 FiberNode
+  // 并且 return 指向父节点
   function reconcileSingleTextNode(
     returnFiber: FiberNode,
     currentFiber: FiberNode | null,
@@ -27,6 +31,10 @@ function ChildReconciler(shouldTrackEffects: boolean) {
     return fiber;
   }
 
+  /**
+   * 根据需要，给当前 fiber 打上 Placement tag
+   * @returns 当前 fiber
+   */
   function placeSingleChild(fiber: FiberNode) {
     // 首屏渲染或者需要标记副作用的时候才给 flags 标记 Placement
     if (shouldTrackEffects && fiber.alternate === null) {

@@ -4,9 +4,11 @@ import { UpdateQueue, processUpdateQueue } from './updateQueue';
 import { HostComponent, HostRoot, HostText } from './workTags';
 import { mountChildFibers, reconcileChildFibers } from './childFibers';
 
-// dfs forward
-// compare ReactElement with fiber node
-// and return child fiber node
+/**
+ * 在 mount 阶段，根据 child ReactElement 创建 child FiberNode，并挂在 wip.child 上
+ * @param {FiberNode} wip
+ * @returns child FiberNode
+ */
 export const beginWork = (wip: FiberNode) => {
   switch (wip.tag) {
     case HostRoot:
@@ -50,10 +52,14 @@ function updateHostComponent(wip: FiberNode) {
   return wip.child;
 }
 
+// 根据当前 fiber 节点和当前 child reactElement 创建 wip.child
 function reconcileChildren(wip: FiberNode, children?: ReactElementType) {
   const current = wip.alternate;
   if (current !== null) {
     //  update
+    // HostRootFiber 的 alternative 有指向的双缓存节点
+    // 所以 react 第一次启动的时候， hostRootFiber 会走这个逻辑
+    // 因此 hostRootFiber 会被打上 Placement 标记
     wip.child = reconcileChildFibers(current, current?.child, children);
   } else {
     // mount

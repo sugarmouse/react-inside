@@ -12,10 +12,10 @@ export const commitMutationEffects = (finishedWork: FiberNode) => {
     const child: FiberNode | null = nextEffect.child;
 
     if (
-      // 向下遍历到第一个没有 subTreeFlags 为 noFlags 的节点
       (nextEffect.subTreeFlags & MutationMask) !== NoFlags &&
       child !== null
     ) {
+      // 向下遍历到第一个 subTreeFlags 为 noFlags 的节点
       nextEffect = child;
     } else {
       // 在第一个 subTreeFlags 为 noFlags 的节点上执行 commitMutationEffectsOnFiber
@@ -40,7 +40,6 @@ function commitMutationEffectsOnFiber(finisdWork: FiberNode) {
   // check and commit placement
   if ((flags & Placement) !== NoFlags) {
     commitPlacement(finisdWork);
-
     finisdWork.flags &= ~Placement; // 清除 Placement 标记
   }
 
@@ -61,6 +60,9 @@ function commitPlacement(finisdWork: FiberNode) {
   }
 }
 
+/**
+ * 找到当前 fiber 对应的 stateNode 在 host 环境中的 父节点
+ */
 function getHostParent(fiber: FiberNode): Container | null {
   let parent = fiber.return;
 

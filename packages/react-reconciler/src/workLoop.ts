@@ -8,7 +8,7 @@ import { HostRoot } from './workTags';
 let workInProgress: FiberNode | null = null;
 
 function prepareFreshStack(root: FiberRootNode) {
-  //create hostROotFiber
+  //create wip HostRootFiber
   workInProgress = createWorkInProgress(root.current, {});
 }
 
@@ -107,9 +107,15 @@ function completeUnitOfWork(fiber: FiberNode) {
   do {
     completeWork(node);
     const sibling = node.sibling;
+    // 如果有兄弟节点，则 sibling 给 wip
+    // 之后回到 workloop 中，继续从 sibling开始往下走
+    // 生成子节点，返回子节点
     if (sibling !== null) {
       workInProgress = sibling;
+      return;
     }
+    // 没有 sibling 就往父节点走
+    // 对每一个节点执行 completeWork
     node = node.return;
     workInProgress = node;
   } while (node !== null);
