@@ -60,7 +60,7 @@ function reconcileChildren(wip: FiberNode, children?: ReactElementType) {
     // HostRootFiber 的 alternative 有指向的双缓存节点
     // 所以 react 第一次启动的时候， hostRootFiber 会走这个逻辑
     // 因此 hostRootFiber 会被打上 Placement 标记
-    wip.child = reconcileChildFibers(current, current?.child, children);
+    wip.child = reconcileChildFibers(wip, current?.child, children);
   } else {
     // mount
     // no side effect track
