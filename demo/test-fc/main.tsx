@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 function Child() {
-  return <div>child</div>;
+  const [num, setNum] = useState(0);
+  return <div>{num}</div>;
 }
 
 function App() {

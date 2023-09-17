@@ -10,6 +10,9 @@ const currentDispatcher: { current: Dispatcher | null } = {
   current: null
 };
 
+/**
+ * 函数 `resolveDispatcher` 用于获取当前的 `Dispatcher`
+ */
 export const resolveDispatcher = (): Dispatcher => {
   const dispatcher = currentDispatcher.current;
 

@@ -4,6 +4,7 @@ import currentDispatcher, {
 } from './src/currentDispatcher';
 import { jsxDEV } from './src/jsx';
 
+// const [a, setA] = useState(0);
 export const useState: Dispatcher['useState'] = (initialState) => {
   const dispatcher = resolveDispatcher();
   return dispatcher.useState(initialState);
