@@ -1,8 +1,9 @@
+import { ReactElementType } from 'shared/ReactTypes';
 import currentDispatcher, {
   Dispatcher,
   resolveDispatcher
 } from './src/currentDispatcher';
-import { jsxDEV } from './src/jsx';
+import { jsx, isValidElement as isValidElementFn } from './src/jsx';
 
 // const [a, setA] = useState(0);
 export const useState: Dispatcher['useState'] = (initialState) => {
@@ -19,7 +20,7 @@ export const __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = {
   // ReactCurrentOwner,
 };
 
-export default {
-  version: '0.0.1',
-  ReactElement: jsxDEV
-};
+export const isValidElement = isValidElementFn;
+export const version = '0.0.1';
+// TODO 根据环境暴露不同的 jsx
+export const createElement = jsx;
