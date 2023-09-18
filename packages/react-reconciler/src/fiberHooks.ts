@@ -22,7 +22,7 @@ interface Hook {
   next: Hook | null;
 }
 
-// for function component
+// for function component in beginWork
 export function renderWithHooks(wip: FiberNode) {
   // 拿到当前 FiberNode
   currentlyRenderingFiber = wip;
