@@ -11,7 +11,7 @@ import {
   HostRoot,
   HostText
 } from './workTags';
-import { NoFlags } from './fiberFlags';
+import { NoFlags, Update } from './fiberFlags';
 
 // dfs backward
 /**
@@ -25,7 +25,7 @@ export const completeWork = (wip: FiberNode) => {
   switch (wip.tag) {
     case HostComponent:
       if (current !== null && wip.stateNode) {
-        // update
+        // TODO update
       } else {
         // mount
         // 创建离屏 DOM，并插入父节点
@@ -38,6 +38,13 @@ export const completeWork = (wip: FiberNode) => {
     case HostText:
       if (current !== null && wip.stateNode) {
         // update
+        // 文本节点的更新在 render 阶段只需要标记 Update 标签，后续处理在 commit 阶段进行
+        const oldText = current.memoizedProps.content;
+        const newText = newProps.content;
+
+        if (oldText !== newText) {
+          markUpdate(wip);
+        }
       } else {
         // mount
         // 创建离屏 DOM，并插入父节点
@@ -65,6 +72,10 @@ export const completeWork = (wip: FiberNode) => {
       return null;
   }
 };
+
+function markUpdate(wip: FiberNode) {
+  wip.flags |= Update;
+}
 
 /**
  * 调用 host 环境的 api，append 所有子节点
