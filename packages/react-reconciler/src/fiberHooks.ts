@@ -66,6 +66,7 @@ function mountState<State>(
 
   // 创建更新队列
   const queue = createUpdateQueue<State>();
+  // 填充 hook 字段
   hook.updateQueue = queue;
   hook.memoizedState = memoizedState;
 
@@ -89,6 +90,10 @@ function dispatchSetState<State>(
   scheduleUpdateOnFiber(fiber);
 }
 
+/**
+ * 维护 hooks 的链表结构，用 fiberNode 的 memorizedState 指向第一个 hook
+ * @returns 一个新的 hook
+ */
 function mountWorkInProgress(): Hook {
   const hook: Hook = {
     memoizedState: null,
