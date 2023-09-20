@@ -74,6 +74,7 @@ function commitMutationEffectsOnFiber(finisdWork: FiberNode) {
       });
     }
     finisdWork.flags &= ~ChildDeletion;
+    finisdWork.deletions = null;
   }
 }
 

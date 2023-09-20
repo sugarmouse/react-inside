@@ -13,7 +13,7 @@ function prepareFreshStack(root: FiberRootNode) {
 }
 
 export function scheduleUpdateOnFiber(fiber: FiberNode) {
-  // TODO shcdule function
+  // TODO: shcdule function
   const root = markUpdateFromFiberToRoot(fiber);
   if (root === null) {
     console.warn(

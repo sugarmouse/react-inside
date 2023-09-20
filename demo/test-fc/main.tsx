@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
-function Child() {
-  const [num, setNum] = useState(0);
-  return <div>{num}</div>;
-}
+console.log('somsfewr');
 
 function App() {
-  return (
-    <div>
-      <Child />
-    </div>
-  );
+  const [num, setNum] = useState(0);
+  window.setNum = setNum;
+  return num === 0 ? <Child /> : <div>{num}</div>;
+}
+
+function Child() {
+  return <div>num is 0</div>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);

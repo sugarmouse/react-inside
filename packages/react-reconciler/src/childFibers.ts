@@ -10,7 +10,7 @@ import { ChildDeletion, Placement } from './fiberFlags';
 
 function ChildReconciler(shouldTrackEffects: boolean) {
   // ...
-  function deleteChild(returnFiber: FiberNode, childToDelete: FiberNode) {
+  function markDeleteChild(returnFiber: FiberNode, childToDelete: FiberNode) {
     if (!shouldTrackEffects) {
       return;
     }
@@ -43,7 +43,8 @@ function ChildReconciler(shouldTrackEffects: boolean) {
             return existing;
           }
 
-          deleteChild(returnFiber, currentFiber);
+          // key相同，type 不同, 删除旧的
+          markDeleteChild(returnFiber, currentFiber);
           break update;
         } else {
           if (__DEV__) {
@@ -53,8 +54,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
         }
       } else {
         // key 不同, 删掉旧的
-        deleteChild(returnFiber, currentFiber);
-        break update;
+        markDeleteChild(returnFiber, currentFiber);
       }
     }
 
@@ -80,7 +80,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
         return existing;
       }
       // 当前节点存在但是不是 hostTest 类型
-      deleteChild(returnFiber, currentFiber);
+      markDeleteChild(returnFiber, currentFiber);
     }
 
     // mount
@@ -103,7 +103,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
   }
 
   return function reconcileChildFibers(
-    returnFiber: FiberNode,
+    wipReturnFiber: FiberNode,
     currentFiber: FiberNode | null,
     newChild?: ReactElementType
   ) {
@@ -112,7 +112,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
       switch (newChild.$$typeof) {
         case REACT_ELEMENT_TYPE:
           return placeSingleChild(
-            reconcileSingleElement(returnFiber, currentFiber, newChild)
+            reconcileSingleElement(wipReturnFiber, currentFiber, newChild)
           );
         default:
           if (__DEV__) {
@@ -127,14 +127,14 @@ function ChildReconciler(shouldTrackEffects: boolean) {
     // handle plain text node
     if (typeof newChild === 'string' || typeof newChild === 'number') {
       return placeSingleChild(
-        reconcileSingleTextNode(returnFiber, currentFiber, newChild)
+        reconcileSingleTextNode(wipReturnFiber, currentFiber, newChild)
       );
     }
 
     // 兜底
     // 比如 newChild 为 null 或者 undefined
     if (currentFiber !== null) {
-      deleteChild(returnFiber, currentFiber);
+      markDeleteChild(wipReturnFiber, currentFiber);
     }
 
     if (__DEV__) {
