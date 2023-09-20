@@ -5,12 +5,7 @@ console.log('somsfewr');
 
 function App() {
   const [num, setNum] = useState(0);
-  window.setNum = setNum;
-  return num === 0 ? <Child /> : <div>{num}</div>;
-}
-
-function Child() {
-  return <div>num is 0</div>;
+  return <div onClickCapture={() => setNum(num + 1)}>{num}</div>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<App />);

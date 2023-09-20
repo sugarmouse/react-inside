@@ -12,6 +12,7 @@ import {
   HostText
 } from './workTags';
 import { NoFlags, Update } from './fiberFlags';
+import { updateFiberProps } from 'react-dom/src/syntheticEvent';
 
 // dfs backward
 /**
@@ -25,7 +26,10 @@ export const completeWork = (wip: FiberNode) => {
   switch (wip.tag) {
     case HostComponent:
       if (current !== null && wip.stateNode) {
-        // TODO update
+        // TODO: 检查每一项 props 是否变化， 比如 className ...
+        // 有变化则打上 Update 标签，以下的 updateProps 放到 commit 阶段
+
+        updateFiberProps(wip.stateNode, newProps);
       } else {
         // mount
         // 创建离屏 DOM，并插入父节点
