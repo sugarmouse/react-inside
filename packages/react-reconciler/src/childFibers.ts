@@ -10,28 +10,47 @@ import { ChildDeletion, Placement } from './fiberFlags';
 
 function ChildReconciler(shouldTrackEffects: boolean) {
   // ...
-  function markDeleteChild(returnFiber: FiberNode, childToDelete: FiberNode) {
+  function markDeleteChild(
+    wipReturnFiber: FiberNode,
+    childToDelete: FiberNode
+  ) {
     if (!shouldTrackEffects) {
       return;
     }
 
-    const deletions = returnFiber.deletions;
+    const deletions = wipReturnFiber.deletions;
     if (deletions === null) {
-      returnFiber.deletions = [childToDelete];
-      returnFiber.flags |= ChildDeletion;
+      wipReturnFiber.deletions = [childToDelete];
+      wipReturnFiber.flags |= ChildDeletion;
     } else {
       deletions.push(childToDelete);
     }
   }
 
+  function markDeleteRemainingChildren(
+    wipReturnFiber: FiberNode,
+    currentFisrtChild: FiberNode | null
+  ) {
+    if (!shouldTrackEffects) {
+      return;
+    }
+    let childToDelete = currentFisrtChild;
+    while (childToDelete !== null) {
+      markDeleteChild(wipReturnFiber, childToDelete);
+      childToDelete = childToDelete.sibling;
+    }
+  }
+
+  // 处理更新之后只有单个 fiber 节点的情况
+  // ABC -> A, A -> B, A -> A
   function reconcileSingleElement(
-    returnFiber: FiberNode,
+    wipReturnFiber: FiberNode,
     currentFiber: FiberNode | null,
     element: ReactElementType
   ): FiberNode {
     const key = element.key;
     // 如果 key 相同，type 相同，则可以复用 fiber 节点
-    update: if (currentFiber !== null) {
+    while (currentFiber !== null) {
       // update
       if (currentFiber.key === key) {
         // key 相同
@@ -39,54 +58,59 @@ function ChildReconciler(shouldTrackEffects: boolean) {
           if (currentFiber.type === element.type) {
             // type 相同, key 相同, 复用 FiberNode
             const existing = useFiber(currentFiber, element.props);
-            existing.return = returnFiber;
+            existing.return = wipReturnFiber;
+            // 之前旧的 FiberNode 存在多余一个的
+            markDeleteRemainingChildren(wipReturnFiber, currentFiber.sibling);
             return existing;
           }
 
           // key相同，type 不同, 删除旧的
-          markDeleteChild(returnFiber, currentFiber);
-          break update;
+          markDeleteRemainingChildren(wipReturnFiber, currentFiber);
+          break;
         } else {
           if (__DEV__) {
             console.warn(`unhandled fiber type: ${element}`);
-            break update;
+            break;
           }
         }
       } else {
         // key 不同, 删掉旧的
-        markDeleteChild(returnFiber, currentFiber);
+        markDeleteChild(wipReturnFiber, currentFiber);
+        currentFiber = currentFiber.sibling;
       }
     }
 
-    // 根据 ReactElement 创建 FiberNode
-    // 并且 return 指向父节点
+    // currentFiber 不存在
+    // mount
     const fiber = createFiberFromElement(element);
-    fiber.return = returnFiber;
+    fiber.return = wipReturnFiber;
     return fiber;
   }
 
   // 根据 ReactElement HostText 创建 FiberNode
   // 并且 return 指向父节点
   function reconcileSingleTextNode(
-    returnFiber: FiberNode,
+    wipReturnFiber: FiberNode,
     currentFiber: FiberNode | null,
     content: string | number
   ): FiberNode {
-    if (currentFiber !== null) {
+    while (currentFiber !== null) {
       // update
       if (currentFiber.tag === HostText) {
         const existing = useFiber(currentFiber, { content });
-        existing.return = returnFiber;
+        existing.return = wipReturnFiber;
+        markDeleteRemainingChildren(wipReturnFiber, currentFiber.sibling);
         return existing;
       }
       // 当前节点存在但是不是 hostTest 类型
-      markDeleteChild(returnFiber, currentFiber);
+      markDeleteChild(wipReturnFiber, currentFiber);
+      currentFiber = currentFiber.sibling;
     }
 
     // mount
     // create a new HostText fiber node
     const fiber = new FiberNode(HostText, { content }, null);
-    fiber.return = returnFiber;
+    fiber.return = wipReturnFiber;
     return fiber;
   }
 
