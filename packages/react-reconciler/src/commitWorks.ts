@@ -1,7 +1,9 @@
 import {
   Container,
+  Instance,
   appendChildToContainer,
   commitUpdate,
+  insertChildToContainer,
   removeChild
 } from 'hostConfig';
 import { FiberNode, FiberRootNode } from './fiber';
@@ -58,14 +60,14 @@ function commitMutationEffectsOnFiber(finisdWork: FiberNode) {
     commitPlacement(finisdWork);
     finisdWork.flags &= ~Placement; // 清除 Placement 标记
   }
-  // TODO: check and commit update
+  // check and commit update
   if ((flags & Update) !== NoFlags) {
     // 因为 commit update 涉及到对 host 环境的节点操作
     // 所以实现放在 renderer 的 hostConfig 里
     commitUpdate(finisdWork);
     finisdWork.flags &= ~Update;
   }
-  // TODO: check and commit ChildDeletion
+  // check and commit ChildDeletion
   if ((flags & ChildDeletion) !== NoFlags) {
     const deletions = finisdWork.deletions;
     if (deletions !== null) {
@@ -161,9 +163,59 @@ function commitPlacement(finisdWork: FiberNode) {
 
   // get host parent
   const hostParent = getHostParent(finisdWork);
+
+  // get host sibling
+  const hostSibling = getHostSibling(finisdWork);
+
   // find finishedWork DOM and append to hostParent
   if (hostParent !== null) {
-    appendPlacementNodeIntoContainer(finisdWork, hostParent);
+    insertOrAppendPlacementNodeIntoContainer(
+      finisdWork,
+      hostParent,
+      hostSibling
+    );
+  }
+}
+
+function getHostSibling(fiber: FiberNode) {
+  let node = fiber;
+
+  findSibling: while (true) {
+    while (node.sibling === null) {
+      const parent = node.return;
+
+      // 父节点不存在或者父节点是 host 相关的节点
+      // 说明当前节点没有 sibling 节点了
+      if (
+        parent === null ||
+        parent.tag === HostComponent ||
+        parent.tag === HostRoot
+      ) {
+        return null;
+      }
+      node = parent;
+    }
+
+    node.sibling.return = node.return;
+    node = node.sibling;
+
+    // 找到的 node 不是 host 相关的节点
+    while (node.tag !== HostText && node.tag !== HostComponent) {
+      if ((node.flags & Placement) !== NoFlags) {
+        continue findSibling;
+      }
+
+      if (node.child === null) {
+        continue findSibling;
+      } else {
+        node.child.return = node;
+        node = node.child;
+      }
+    }
+
+    if ((node.flags & Placement) === NoFlags) {
+      return node.stateNode;
+    }
   }
 }
 
@@ -189,22 +241,29 @@ function getHostParent(fiber: FiberNode): Container | null {
   return null;
 }
 
-function appendPlacementNodeIntoContainer(
+function insertOrAppendPlacementNodeIntoContainer(
   finishedWork: FiberNode,
-  container: Container
+  hostParent: Container,
+  before?: Instance
 ) {
   if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
-    appendChildToContainer(container, finishedWork.stateNode);
+    if (before) {
+      insertChildToContainer(finishedWork.stateNode, hostParent, before);
+    } else {
+      appendChildToContainer(hostParent, finishedWork.stateNode);
+    }
     return;
   }
 
+  // 传入 finishedWork 不是 host 相关的节点，递归往子节点找
   const child = finishedWork.child;
   if (child !== null) {
-    appendPlacementNodeIntoContainer(child, container);
+    insertOrAppendPlacementNodeIntoContainer(child, hostParent);
+    let sibling = child.sibling;
 
-    const sibling = child.sibling;
-    if (sibling !== null) {
-      appendPlacementNodeIntoContainer(sibling, container);
+    while (sibling !== null) {
+      insertOrAppendPlacementNodeIntoContainer(sibling, hostParent);
+      sibling = sibling.sibling;
     }
   }
 }

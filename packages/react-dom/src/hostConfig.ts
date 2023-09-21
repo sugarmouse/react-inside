@@ -32,6 +32,14 @@ export const appendChildToContainer = (
   return container.appendChild(child);
 };
 
+export function insertChildToContainer(
+  container: Container,
+  child: Instance,
+  before: Instance
+) {
+  return container.insertBefore(child, before);
+}
+
 export function commitUpdate(fiber: FiberNode) {
   switch (fiber.tag) {
     case HostText:

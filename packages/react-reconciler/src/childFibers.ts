@@ -8,6 +8,8 @@ import { REACT_ELEMENT_TYPE } from 'shared/ReactSymbols';
 import { HostText } from './workTags';
 import { ChildDeletion, Placement } from './fiberFlags';
 
+type ExistingChildren = Map<string | number, FiberNode>;
+
 function ChildReconciler(shouldTrackEffects: boolean) {
   // ...
   function markDeleteChild(
@@ -126,6 +128,132 @@ function ChildReconciler(shouldTrackEffects: boolean) {
     return fiber;
   }
 
+  function reconcileChildrenArray(
+    wipReturnFiber: FiberNode,
+    currentFirstChild: FiberNode | null,
+    newChildren: any[]
+  ) {
+    let lastPlacedIndex = 0;
+    let lastNewFiber: FiberNode | null = null;
+    let firstNewFiber: FiberNode | null = null;
+
+    // 将 current children fiber 节点保存在 map 中
+    const existingChildren: ExistingChildren = new Map();
+    let p = currentFirstChild;
+    while (p !== null) {
+      const keyToUse = p.key !== null ? p.key : p.index;
+      existingChildren.set(keyToUse, p);
+      p = p.sibling;
+    }
+
+    for (let index = 0; index < newChildren.length; index++) {
+      // 遍历 newChildren，查找是否有可复用的节点
+      const after = newChildren[index];
+      const newFiber = updateFromMap(
+        wipReturnFiber,
+        existingChildren,
+        index,
+        after
+      );
+
+      if (newFiber === null) continue;
+
+      // 维护 sibling node 的单链表结构
+      // 并且记录链表的 头
+      newFiber.index = index;
+      newFiber.return = wipReturnFiber;
+      if (lastNewFiber === null) {
+        // 更新后的第一个节点
+        lastNewFiber = newFiber;
+        firstNewFiber = newFiber;
+      } else {
+        lastNewFiber.sibling = newFiber;
+        lastNewFiber = lastNewFiber.sibling;
+      }
+
+      // 标记移动还是插入
+      if (!shouldTrackEffects) continue;
+
+      const current = newFiber.alternate;
+      if (current !== null) {
+        // update
+        const oldIndex = current.index;
+        if (oldIndex < lastPlacedIndex) {
+          // 标记移动
+          newFiber.flags |= Placement;
+          continue;
+        } else {
+          // 不需要移动
+          lastPlacedIndex = oldIndex;
+        }
+      } else {
+        // mount
+        newFiber.flags |= Placement;
+      }
+    }
+
+    // map 中剩下的标记删除
+    existingChildren.forEach((fiber) => {
+      markDeleteChild(wipReturnFiber, fiber);
+    });
+
+    return firstNewFiber;
+  }
+
+  function updateFromMap(
+    wipReturnFiber: FiberNode,
+    existingChildren: ExistingChildren,
+    index: number,
+    element: any
+  ): FiberNode | null {
+    const keyToUse = element.key !== null ? element.key : index;
+    // 和 element key 相同的 fiberNode
+    const before = existingChildren.get(keyToUse);
+
+    // HostText
+    if (typeof element === 'string' || typeof element === 'number') {
+      if (before) {
+        if (before.tag === HostText) {
+          existingChildren.delete(keyToUse);
+          return useFiber(before, { content: element + '' });
+        }
+      }
+      return new FiberNode(HostText, { content: element + '' }, null);
+    }
+
+    // ReactElement
+    if (typeof element === 'object' && element !== null) {
+      switch (element.$$typeof) {
+        case REACT_ELEMENT_TYPE:
+          if (before) {
+            if (before.type === element.type) {
+              existingChildren.delete(keyToUse);
+              return useFiber(before, element.props);
+            }
+          }
+          return createFiberFromElement(element);
+        default:
+          if (__DEV__) {
+            console.warn(`unhandled fiber type: ${String(element.$$typeof)}`);
+          }
+      }
+    }
+
+    // TODO: handle multiple react element
+    if (Array.isArray(element) && __DEV__) {
+      console.warn('unhandled multiple react element');
+      return null;
+    }
+
+    // 比如 更新之后的 element 为 null
+    return null;
+  }
+
+  /**
+   * wipReturnFiber: FiberNode wip 的 fiberTree 中的正在渲染的 fiber
+   * currentFiber: wipReturnFiber.alternate.child
+   * newChild?: 需要在 wipReturnFiber.child 中插入的新的 ReactElementType
+   */
   return function reconcileChildFibers(
     wipReturnFiber: FiberNode,
     currentFiber: FiberNode | null,
@@ -144,9 +272,12 @@ function ChildReconciler(shouldTrackEffects: boolean) {
           }
           break;
       }
-    }
 
-    // TODO handle multiple react element
+      // handle multiple react element
+      if (Array.isArray(newChild)) {
+        return reconcileChildrenArray(wipReturnFiber, currentFiber, newChild);
+      }
+    }
 
     // handle plain text node
     if (typeof newChild === 'string' || typeof newChild === 'number') {
@@ -158,7 +289,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
     // 兜底
     // 比如 newChild 为 null 或者 undefined
     if (currentFiber !== null) {
-      markDeleteChild(wipReturnFiber, currentFiber);
+      markDeleteRemainingChildren(wipReturnFiber, currentFiber);
     }
 
     if (__DEV__) {
