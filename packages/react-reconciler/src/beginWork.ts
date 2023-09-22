@@ -1,14 +1,15 @@
 import { ReactElementType } from 'shared/ReactTypes';
 import { FiberNode } from './fiber';
 import { UpdateQueue, processUpdateQueue } from './updateQueue';
+import { mountChildFibers, reconcileChildFibers } from './childFibers';
+import { renderWithHooks } from './fiberHooks';
 import {
   FunctionComponent,
   HostComponent,
   HostRoot,
-  HostText
+  HostText,
+  Fragment
 } from './workTags';
-import { mountChildFibers, reconcileChildFibers } from './childFibers';
-import { renderWithHooks } from './fiberHooks';
 
 /**
  * 在 mount 阶段，根据 child ReactElement 创建 child FiberNode，并挂在 wip.child 上
@@ -25,6 +26,8 @@ export const beginWork = (wip: FiberNode) => {
       return null;
     case FunctionComponent:
       return updateFunctionComponent(wip);
+    case Fragment:
+      return updateFragment(wip);
     default:
       if (__DEV__) {
         console.warn(`beginWork unimplemented tag: ${wip.tag}`);
@@ -62,6 +65,12 @@ function updateHostComponent(wip: FiberNode) {
 
 function updateFunctionComponent(wip: FiberNode) {
   const nextChildren = renderWithHooks(wip);
+  reconcileChildren(wip, nextChildren);
+  return wip.child;
+}
+
+function updateFragment(wip: FiberNode) {
+  const nextChildren = wip.pendingProps;
   reconcileChildren(wip, nextChildren);
   return wip.child;
 }

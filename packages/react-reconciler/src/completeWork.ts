@@ -6,6 +6,7 @@ import {
 } from 'hostConfig';
 import { FiberNode } from './fiber';
 import {
+  Fragment,
   FunctionComponent,
   HostComponent,
   HostRoot,
@@ -59,13 +60,11 @@ export const completeWork = (wip: FiberNode) => {
       return null;
 
     case HostRoot:
+    case FunctionComponent:
+    case Fragment:
       // hostRoot 的对应的 host component 在
       // (hostRoot.stataeNode as FiberRootNode).container 上
       // 在 ReactDOM.createRoot().render() 阶段创建并且放在 fiberRootNode.container 上
-      bubbleProperties(wip);
-      return null;
-
-    case FunctionComponent:
       bubbleProperties(wip);
       return null;
 

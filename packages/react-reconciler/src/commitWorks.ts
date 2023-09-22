@@ -81,7 +81,7 @@ function commitMutationEffectsOnFiber(finisdWork: FiberNode) {
 }
 
 function commitDeletion(childToDelete: FiberNode) {
-  let rootHostNode: FiberNode | null = null;
+  const rootChildrenToDelete: FiberNode[] = [];
 
   // dfs 从需要 childToDelete 遍历 fiber tree，对每个节点执行回调函数
   // 因为当前需要删除的节点不一定是和 host 环境相关的节点
@@ -89,15 +89,11 @@ function commitDeletion(childToDelete: FiberNode) {
   commitNestedComponent(childToDelete, (unmountFiber) => {
     switch (unmountFiber.tag) {
       case HostComponent:
-        if (rootHostNode === null) {
-          rootHostNode = unmountFiber;
-        }
+        recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
         // TODO: 解绑 ref
         return;
       case HostText:
-        if (rootHostNode === null) {
-          rootHostNode = unmountFiber;
-        }
+        recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
         return;
       case FunctionComponent:
         // TODO: useEffect unmount, 解绑 ref
@@ -111,10 +107,12 @@ function commitDeletion(childToDelete: FiberNode) {
   });
 
   // 当找到第一个 host 相关的子节点，直接从 host 环境删除此节点
-  if (rootHostNode !== null) {
+  if (rootChildrenToDelete.length > 0) {
     const hostParent = getHostParent(childToDelete);
     if (hostParent !== null) {
-      removeChild((rootHostNode as FiberNode).stateNode, hostParent);
+      rootChildrenToDelete.forEach((node) => {
+        removeChild(node.stateNode, hostParent);
+      });
     }
   }
   // 清除 fiber
@@ -174,6 +172,27 @@ function commitPlacement(finisdWork: FiberNode) {
       hostParent,
       hostSibling
     );
+  }
+}
+
+function recordHostChildrenToDelete(
+  childrenToDelete: FiberNode[],
+  unmountFiber: FiberNode
+) {
+  const lastOne = childrenToDelete[childrenToDelete.length - 1];
+
+  if (!lastOne) {
+    // 1. 找到第一个 root host 节点
+    childrenToDelete.push(unmountFiber);
+  } else {
+    // 2. 找到每一个 host 节点，判断这个节点是不是 1 找到的那个节点
+    let node = lastOne.sibling;
+    while (node !== null) {
+      if (unmountFiber === node) {
+        childrenToDelete.push(unmountFiber);
+      }
+      node = node.sibling;
+    }
   }
 }
 
