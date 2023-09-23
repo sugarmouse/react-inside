@@ -10,6 +10,7 @@ import {
 } from './updateQueue';
 import { Action } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
+import { requestUpdateLanes } from './fiberLanes';
 
 let currentlyRenderingFiber: FiberNode | null = null;
 let workInProgressHook: Hook | null = null;
@@ -114,7 +115,8 @@ function dispatchSetState<State>(
   updateQueue: UpdateQueue<State>,
   action: Action<State>
 ) {
-  const update = createUpdate<State>(action);
+  const lane = requestUpdateLanes();
+  const update = createUpdate<State>(action, lane);
   enqueueUpdate(updateQueue, update);
   scheduleUpdateOnFiber(fiber);
 }
