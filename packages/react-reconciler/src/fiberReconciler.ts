@@ -35,6 +35,6 @@ export function updateContainer(
     udpate
   );
   // 连接更新流程与调度机制
-  scheduleUpdateOnFiber(hostRootFiber);
+  scheduleUpdateOnFiber(hostRootFiber, lane);
   return element;
 }

@@ -3,6 +3,7 @@ import { commitMutationEffects } from './commitWorks';
 import { completeWork } from './completeWork';
 import { FiberNode, FiberRootNode, createWorkInProgress } from './fiber';
 import { MutationMask, NoFlags } from './fiberFlags';
+import { Lane, mergeLanes } from './fiberLanes';
 import { HostRoot } from './workTags';
 
 let workInProgress: FiberNode | null = null;
@@ -12,7 +13,7 @@ function prepareFreshStack(root: FiberRootNode) {
   workInProgress = createWorkInProgress(root.current, {});
 }
 
-export function scheduleUpdateOnFiber(fiber: FiberNode) {
+export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
   // TODO: shcdule function
   const root = markUpdateFromFiberToRoot(fiber);
   if (root === null) {
@@ -21,7 +22,13 @@ export function scheduleUpdateOnFiber(fiber: FiberNode) {
     );
     return;
   }
+  markRootUpdated(root, lane);
+  // TODO: schdule update
   renderRoot(root);
+}
+
+function markRootUpdated(root: FiberRootNode, lane: Lane) {
+  root.pendingLanes = mergeLanes(root.pendingLanes, lane);
 }
 
 // find FiberRootNode from the fiberNode passed in
