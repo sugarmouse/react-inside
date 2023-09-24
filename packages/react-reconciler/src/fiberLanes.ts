@@ -1,9 +1,10 @@
 export type Lane = number;
 export type Lanes = number;
 
-export const SyncLane = 0b0001;
-export const NoLane = 0b0000;
-export const NoLanes = 0b0000;
+export const NoLanes: Lanes = /*                        */ 0b0000000000000000000000000000000;
+export const NoLane: Lane = /*                          */ 0b0000000000000000000000000000000;
+
+export const SyncLane: Lane = /*                        */ 0b0000000000000000000000000000001;
 
 export function mergeLanes(laneA: Lane, laneB: Lane): Lanes {
   return laneA | laneB;
@@ -11,4 +12,8 @@ export function mergeLanes(laneA: Lane, laneB: Lane): Lanes {
 
 export function requestUpdateLanes(): Lane {
   return SyncLane;
+}
+
+export function getHighestPriorLane(lanes: Lanes): Lane {
+  return lanes & -lanes;
 }
