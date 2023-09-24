@@ -88,7 +88,7 @@ export const processUpdateQueue = <State>(
       pending = pending.next as Update<State>;
     } while (pending !== first);
   }
-  result.memoizedState = baseState;
 
+  result.memoizedState = baseState;
   return result;
 };

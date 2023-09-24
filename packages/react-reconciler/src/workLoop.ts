@@ -11,6 +11,7 @@ import {
   NoLane,
   SyncLane,
   getHighestPriorLane,
+  markRootFinished,
   mergeLanes
 } from './fiberLanes';
 
@@ -109,13 +110,19 @@ function performSyncOnRoot(root: FiberRootNode, lane: Lane) {
 
 function commitRoot(root: FiberRootNode) {
   const finishedWork = root.finishedWork;
+  const lane = root.finishedLane;
 
   if (finishedWork === null) return;
 
   if (__DEV__) {
     console.warn('commit work starting...');
   }
+
+  // 重置
   root.finishedWork = null;
+  root.finishedLane = NoLane;
+  markRootFinished(root, lane);
+
   // 判断是否存在 3 个子阶段需要执行操作
   const subtreeHasEffects =
     (finishedWork.subTreeFlags & MutationMask) !== NoFlags;
