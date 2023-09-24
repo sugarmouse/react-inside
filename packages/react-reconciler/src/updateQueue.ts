@@ -56,21 +56,39 @@ export const enqueueUpdate = <State>(
 // which is the the new state after the update.
 export const processUpdateQueue = <State>(
   baseState: State,
-  pendingUpdate: Update<State> | null
+  pendingUpdate: Update<State> | null,
+  renderLane: Lane
 ): { memoizedState: State } => {
   const result: ReturnType<typeof processUpdateQueue<State>> = {
     memoizedState: baseState
   };
   if (pendingUpdate !== null) {
-    const action = pendingUpdate.action;
-    if (action instanceof Function) {
-      result.memoizedState = action(baseState);
-    } else {
-      // react 启动阶段走这里，直接返回 action
-      // 此时的 action 指的是 ReactElement
-      result.memoizedState = action;
-    }
+    // 第一个 update
+    const first = pendingUpdate.next;
+    let pending = pendingUpdate.next as Update<any>;
+
+    do {
+      const updateLane = pending.lane;
+      if (updateLane === renderLane) {
+        // 执行计算过程
+        const action = pending.action;
+        if (action instanceof Function) {
+          baseState = action(baseState);
+        } else {
+          // react 启动阶段走这里，直接返回 action
+          // 此时的 action 指的是 ReactElement
+          baseState = action;
+        }
+      } else {
+        // 不是
+        if (__DEV__) {
+          console.warn('only SyncLane impled for now');
+        }
+      }
+      pending = pending.next as Update<State>;
+    } while (pending !== first);
   }
+  result.memoizedState = baseState;
 
   return result;
 };
