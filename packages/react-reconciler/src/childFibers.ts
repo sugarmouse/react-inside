@@ -62,9 +62,6 @@ function ChildReconciler(shouldTrackEffects: boolean) {
             // type 相同, key 相同, 复用 FiberNode
             let props = element.props;
             if (element.type === REACT_FRAGMENT_TYPE) {
-              if (__DEV__) {
-                console.warn('fragment element node is: ', element);
-              }
               // 复用 Fragment fiber node
               props = element.props.children;
             }
@@ -268,9 +265,6 @@ function ChildReconciler(shouldTrackEffects: boolean) {
     // handle multiple react element
     // 在 map 中存在数组，可以直接当成 Fragment 节点处理
     if (Array.isArray(element)) {
-      if (__DEV__) {
-        console.warn('array element node is: ', element);
-      }
       return updateFragment(
         wipReturnFiber,
         before,

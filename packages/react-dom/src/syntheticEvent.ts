@@ -30,10 +30,6 @@ export function initEvent(container: Container, eventType: string) {
     return;
   }
 
-  if (__DEV__) {
-    console.log('init event', eventType);
-  }
-
   container.addEventListener(eventType, (event: Event) => {
     dispatchEvent(container, eventType, event);
   });

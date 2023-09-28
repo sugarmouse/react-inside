@@ -1,4 +1,3 @@
-import { ReactElementType } from 'shared/ReactTypes';
 import currentDispatcher, {
   Dispatcher,
   resolveDispatcher
@@ -9,6 +8,10 @@ import { jsx, isValidElement as isValidElementFn } from './src/jsx';
 export const useState: Dispatcher['useState'] = (initialState) => {
   const dispatcher = resolveDispatcher();
   return dispatcher.useState(initialState);
+};
+export const useEffect: Dispatcher['useEffect'] = (callback, deps) => {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useEffect(callback, deps);
 };
 
 // 内部数据共享层
