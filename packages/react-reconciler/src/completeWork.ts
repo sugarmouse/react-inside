@@ -1,5 +1,6 @@
 import {
   Container,
+  Instance,
   appendInitialChild,
   createInstance,
   createTextInstance
@@ -13,7 +14,6 @@ import {
   HostText
 } from './workTags';
 import { NoFlags, Update } from './fiberFlags';
-import { updateFiberProps } from 'react-dom/src/syntheticEvent';
 
 // dfs backward
 /**
@@ -29,8 +29,7 @@ export const completeWork = (wip: FiberNode) => {
       if (current !== null && wip.stateNode) {
         // TODO: 检查每一项 props 是否变化， 比如 className ...
         // 有变化则打上 Update 标签，以下的 updateProps 放到 commit 阶段
-
-        updateFiberProps(wip.stateNode, newProps);
+        markUpdate(wip);
       } else {
         // mount
         // 创建离屏 DOM，并插入父节点
@@ -83,7 +82,7 @@ function markUpdate(wip: FiberNode) {
 /**
  * 调用 host 环境的 api，append 所有子节点
  */
-function appendAllChildren(parent: Container, wip: FiberNode) {
+function appendAllChildren(parent: Container | Instance, wip: FiberNode) {
   let node = wip.child;
 
   while (node !== null) {
