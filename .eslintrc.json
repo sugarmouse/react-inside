@@ -20,6 +20,10 @@
         "@typescript-eslint",
         "prettier"
     ],
+    "ignorePatterns": [
+        "**/*/__tests__/**",
+        "scripts/**/*.js"
+    ],
     "rules": {
         "prettier/prettier": "error",
         "no-case-declarations": "off",

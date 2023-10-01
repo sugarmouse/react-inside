@@ -39,6 +39,7 @@
     "jest": "^29.7.0",
     "jest-config": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "jest-react": "^0.14.0",
     "lint-staged": "^14.0.1",
     "prettier": "^3.0.3",
     "rimraf": "^5.0.1",

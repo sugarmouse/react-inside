@@ -92,7 +92,7 @@ export function createRoot() {
   // @ts-ignore
   const root = createContainer(container);
   return {
-    __Scheduler: Scheduler,
+    _Scheduler: Scheduler,
     render(element: ReactElementType) {
       return updateContainer(element, root);
     },
