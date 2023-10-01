@@ -112,6 +112,15 @@ importers:
         specifier: ^4.4.5
         version: 4.4.9(@types/node@20.4.7)
 
+  packages/react-noop-renderer:
+    dependencies:
+      react-reconciler:
+        specifier: link:../react-reconciler
+        version: link:../react-reconciler
+      shared:
+        specifier: link:../shared
+        version: link:../shared
+
 packages:
 
   /@aashutoshrathi/word-wrap@1.2.6:

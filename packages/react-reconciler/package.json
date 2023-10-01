@@ -1,6 +1,6 @@
 {
   "name": "react-reconciler",
-  "version": "0.01",
+  "version": "0.0.1",
   "description": " React's rendering system.",
   "module": "index.ts",
   "workspace": true,
