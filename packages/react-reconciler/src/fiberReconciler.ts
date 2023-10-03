@@ -9,7 +9,7 @@ import {
   enqueueUpdate
 } from './updateQueue';
 import { scheduleUpdateOnFiber } from './workLoop';
-import { requestUpdateLanes } from './fiberLanes';
+import { requestUpdateLane } from './fiberLanes';
 
 // create an instance of FiberRootNode,
 // which is the root node of all fiberNodes
@@ -28,7 +28,7 @@ export function updateContainer(
   root: FiberRootNode
 ) {
   const hostRootFiber = root.current;
-  const lane = requestUpdateLanes();
+  const lane = requestUpdateLane();
   const udpate = createUpdate<ReactElementType | null>(element, lane);
   enqueueUpdate(
     hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,

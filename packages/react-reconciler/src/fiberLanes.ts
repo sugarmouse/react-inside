@@ -21,13 +21,13 @@ export function mergeLanes(laneA: Lane, laneB: Lane): Lanes {
   return laneA | laneB;
 }
 
-export function requestUpdateLanes(): Lane {
+export function requestUpdateLane(): Lane {
   const currentSchedulerPriority = getCurrentPriorityLevel();
   const lane = schedulerPriorityToLane(currentSchedulerPriority);
   return lane;
 }
 
-export function getHighestPriorLane(lanes: Lanes): Lane {
+export function getHighestPriorityLane(lanes: Lanes): Lane {
   return lanes & -lanes;
 }
 
@@ -36,7 +36,7 @@ export function markRootFinished(root: FiberRootNode, lane: Lane) {
 }
 
 export function lanesToSchedulerPriority(lanes: Lanes) {
-  const lane = getHighestPriorLane(lanes);
+  const lane = getHighestPriorityLane(lanes);
 
   if (lane === SyncLane) {
     return unstable_ImmediatePriority;

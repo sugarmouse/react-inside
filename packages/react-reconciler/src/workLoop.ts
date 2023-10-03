@@ -24,7 +24,7 @@ import {
   Lane,
   NoLane,
   SyncLane,
-  getHighestPriorLane,
+  getHighestPriorityLane,
   markRootFinished,
   mergeLanes
 } from './fiberLanes';
@@ -56,7 +56,7 @@ export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 
 // 调度阶段的入口
 function ensureRootIsScheduled(root: FiberRootNode) {
-  const updateLane = getHighestPriorLane(root.pendingLanes);
+  const updateLane = getHighestPriorityLane(root.pendingLanes);
   if (updateLane === NoLane) {
     // 没有更新
     return;
@@ -93,7 +93,7 @@ function markUpdateFromFiberToRoot(fiber: FiberNode) {
 function performSyncOnRoot(root: FiberRootNode, lane: Lane) {
   // initialize
 
-  const nextLane = getHighestPriorLane(root.pendingLanes);
+  const nextLane = getHighestPriorityLane(root.pendingLanes);
   if (nextLane !== SyncLane) {
     // NoLane
     // 或者其他优先级低的 lane
