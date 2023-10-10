@@ -1,7 +1,7 @@
 import { Action } from 'shared/ReactTypes';
 import { Update } from './fiberFlags';
 import { Dispatch } from 'react/src/currentDispatcher';
-import { Lane } from './fiberLanes';
+import { Lane, NoLane, isSubsetOfLanes } from './fiberLanes';
 
 export interface Update<State> {
   action: Action<State>;
@@ -58,37 +58,70 @@ export const processUpdateQueue = <State>(
   baseState: State,
   pendingUpdate: Update<State> | null,
   renderLane: Lane
-): { memoizedState: State } => {
+): {
+  memoizedState: State;
+  baseState: State;
+  baseQueue: Update<State> | null;
+} => {
   const result: ReturnType<typeof processUpdateQueue<State>> = {
-    memoizedState: baseState
+    memoizedState: baseState,
+    baseState,
+    baseQueue: null
   };
+
   if (pendingUpdate !== null) {
     // 第一个 update
     const first = pendingUpdate.next;
     let pending = pendingUpdate.next as Update<any>;
 
+    let newBaseState = baseState;
+    let newBaseQueueFirst: Update<State> | null = null;
+    let newBaseQueueLast: Update<State> | null = null;
+    let newState = baseState;
+
     do {
       const updateLane = pending.lane;
-      if (updateLane === renderLane) {
+      if (!isSubsetOfLanes(renderLane, updateLane)) {
+        // TODO: start here
+        // 优先级不够，被跳过
+        const clone = createUpdate(pending.action, pending.lane);
+        if (newBaseQueueFirst === null) {
+          // 第一个被跳过的 update
+          newBaseQueueFirst = clone;
+          newBaseQueueLast = clone;
+          newBaseState = newState;
+        } else {
+          (newBaseQueueLast as Update<State>).next = clone;
+          newBaseQueueLast = clone;
+        }
+      } else {
+        if (newBaseQueueLast !== null) {
+          newBaseQueueLast.next = createUpdate(pending.action, NoLane);
+          newBaseQueueLast = newBaseQueueLast.next;
+        }
         // 执行计算过程
         const action = pending.action;
         if (action instanceof Function) {
-          baseState = action(baseState);
+          newState = action(baseState);
         } else {
           // react 启动阶段走这里，直接返回 action
           // 此时的 action 指的是 ReactElement
-          baseState = action;
-        }
-      } else {
-        // 不是
-        if (__DEV__) {
-          console.warn('only SyncLane impled for now');
+          newState = action;
         }
       }
       pending = pending.next as Update<State>;
     } while (pending !== first);
+
+    if (newBaseQueueLast === null) {
+      // 本次计算没有 update 被跳过
+      newBaseState = newState;
+    } else {
+      newBaseQueueLast.next = newBaseQueueFirst;
+    }
+    result.memoizedState = newState;
+    result.baseState = newBaseState;
+    result.baseQueue = newBaseQueueLast;
   }
 
-  result.memoizedState = baseState;
   return result;
 };

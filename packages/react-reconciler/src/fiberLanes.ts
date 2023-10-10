@@ -16,6 +16,7 @@ export const NoLane: Lane = /*                          */ 0b0000000000000000000
 export const SyncLane: Lane = /*                        */ 0b0000000000000000000000000000001;
 export const InputContinuousLane: Lane = /*             */ 0b0000000000000000000000000000010;
 export const DefaultLane: Lane = /*                     */ 0b0000000000000000000000000000100;
+export const IdleLane: Lane = /*                        */ 0b0000000000000000000000000001000;
 
 export function mergeLanes(laneA: Lane, laneB: Lane): Lanes {
   return laneA | laneB;
@@ -61,4 +62,8 @@ export function schedulerPriorityToLane(schedulerPriority: number): Lane {
     return DefaultLane;
   }
   return NoLane;
+}
+
+export function isSubsetOfLanes(set: Lanes, subSet: Lane): boolean {
+  return (subSet & set) === subSet;
 }

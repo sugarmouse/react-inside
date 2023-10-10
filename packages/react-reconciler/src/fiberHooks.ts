@@ -2,6 +2,7 @@ import internals from 'shared/internals';
 import { FiberNode } from './fiber';
 import { Dispatcher, Dispatch } from 'react/src/currentDispatcher';
 import {
+  Update,
   UpdateQueue,
   createUpdate,
   createUpdateQueue,
@@ -23,8 +24,10 @@ const { currentDispatcher } = internals;
 
 // 保存每一个 hook 对应的状态
 interface Hook {
+  baseState: any;
   memoizedState: any;
   updateQueue: unknown;
+  baseQueue: Update<any> | null;
   next: Hook | null;
 }
 
@@ -194,15 +197,37 @@ function updateState<State>(): [State, Dispatch<State>] {
 
   // 计算新的 state
   const queue = hook.updateQueue as UpdateQueue<State>;
+  const baseState = hook.baseState;
+
   const pendingUpdate = queue.shared.pending;
+  const current = currentHook as Hook;
+  let baseQueue = current.baseQueue;
+
   queue.shared.pending = null;
   if (pendingUpdate !== null) {
-    const { memoizedState } = processUpdateQueue(
-      hook.memoizedState,
-      pendingUpdate,
-      renderLane
-    );
-    hook.memoizedState = memoizedState;
+    if (baseQueue !== null) {
+      // 将 baseQueue 和 pendingUpdate 合并
+      const baseFirst = baseQueue.next;
+      const pendingFirst = pendingUpdate.next;
+      baseQueue.next = pendingFirst;
+      pendingUpdate.next = baseFirst;
+    }
+
+    baseQueue = pendingUpdate;
+    current.baseQueue = baseQueue;
+    queue.shared.pending = null;
+
+    if (baseQueue !== null) {
+      const {
+        memoizedState,
+        baseQueue: newBaseQueue,
+        baseState: newBaseState
+      } = processUpdateQueue(baseState, baseQueue, renderLane);
+
+      hook.memoizedState = memoizedState;
+      hook.baseQueue = newBaseQueue;
+      hook.baseState = newBaseState;
+    }
   }
 
   // 返回新的 state 和 dispatch
@@ -257,7 +282,9 @@ function mountWorkInProgress(): Hook {
   const hook: Hook = {
     memoizedState: null,
     updateQueue: null,
-    next: null
+    next: null,
+    baseQueue: null,
+    baseState: null
   };
 
   if (workInProgressHook === null) {
@@ -310,7 +337,9 @@ function updateWorkInProgressHook(): Hook {
   const newHook: Hook = {
     memoizedState: currentHook.memoizedState,
     updateQueue: currentHook.updateQueue,
-    next: null
+    next: null,
+    baseQueue: currentHook.baseQueue,
+    baseState: currentHook.baseState
   };
 
   // 维护 hooks 的链表结构
