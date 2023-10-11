@@ -203,7 +203,6 @@ function updateState<State>(): [State, Dispatch<State>] {
   const current = currentHook as Hook;
   let baseQueue = current.baseQueue;
 
-  queue.shared.pending = null;
   if (pendingUpdate !== null) {
     if (baseQueue !== null) {
       // 将 baseQueue 和 pendingUpdate 合并
@@ -252,6 +251,7 @@ function mountState<State>(
   // 填充 hook 字段
   hook.updateQueue = queue;
   hook.memoizedState = memoizedState;
+  hook.baseState = memoizedState;
 
   if (currentlyRenderingFiber === null) {
     throw new Error('Hooks can only be called in a React function component');

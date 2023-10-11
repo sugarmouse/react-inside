@@ -359,7 +359,7 @@ function insertOrAppendPlacementNodeIntoContainer(
 ) {
   if (finishedWork.tag === HostComponent || finishedWork.tag === HostText) {
     if (before) {
-      insertChildToContainer(finishedWork.stateNode, hostParent, before);
+      insertChildToContainer(hostParent, finishedWork.stateNode, before);
     } else {
       appendChildToContainer(hostParent, finishedWork.stateNode);
     }
