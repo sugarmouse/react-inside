@@ -9,6 +9,7 @@
     "debug": "rimraf dist && rollup -w  --bundleConfigAsCjs --config scripts/rollup/dev.config.js",
     "demo:fc": "vite serve demo/test-fc --config scripts/vite/vite.config.js --force",
     "demo:trans": "vite serve demo/transition --config scripts/vite/vite.config.js --force",
+    "demo:ref": "vite serve demo/ref --config scripts/vite/vite.config.js --force",
     "test": "jest --config scripts/jest/jest.config.js"
   },
   "keywords": [],

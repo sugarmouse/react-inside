@@ -4,6 +4,7 @@ import {
   commitHookEffectListCreate,
   commitHookEffectListDestroy,
   commitHookEffectListUnmount,
+  commitLayoutEffects,
   commitMutationEffects
 } from './commitWorks';
 import { completeWork } from './completeWork';
@@ -289,6 +290,7 @@ function commitRoot(root: FiberRootNode) {
     commitMutationEffects(finishedWork, root);
     root.current = finishedWork; // 双缓存机制的 fiber 树切换
     // layout
+    commitLayoutEffects(finishedWork, root);
   } else {
     root.current = finishedWork;
   }

@@ -11,6 +11,7 @@ import {
   Fragment
 } from './workTags';
 import { Lane } from './fiberLanes';
+import { Ref } from './fiberFlags';
 
 /**
  * 在 mount 阶段，根据 child ReactElement 创建 child FiberNode，并挂在 wip.child 上
@@ -60,6 +61,7 @@ function updateHostRoot(wip: FiberNode, renderLane: Lane) {
 function updateHostComponent(wip: FiberNode) {
   const nextPros = wip.pendingProps;
   const nextChildren = nextPros.children;
+  markRef(wip.alternate, wip);
   reconcileChildren(wip, nextChildren);
   return wip.child;
 }
@@ -89,5 +91,16 @@ function reconcileChildren(wip: FiberNode, children?: ReactElementType) {
     // mount
     // no side effect track
     wip.child = mountChildFibers(wip, null, children);
+  }
+}
+
+function markRef(current: FiberNode | null, workInProgress: FiberNode) {
+  const ref = workInProgress.ref;
+
+  if (
+    (current === null && ref !== null) ||
+    (current !== null && current.ref !== ref)
+  ) {
+    workInProgress.flags |= Ref;
   }
 }

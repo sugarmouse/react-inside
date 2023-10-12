@@ -13,7 +13,7 @@ import {
   HostRoot,
   HostText
 } from './workTags';
-import { NoFlags, Update } from './fiberFlags';
+import { NoFlags, Ref, Update } from './fiberFlags';
 
 // dfs backward
 /**
@@ -30,12 +30,22 @@ export const completeWork = (wip: FiberNode) => {
         // TODO: 检查每一项 props 是否变化， 比如 className ...
         // 有变化则打上 Update 标签，以下的 updateProps 放到 commit 阶段
         markUpdate(wip);
+
+        // 标记 Ref
+        if (current.ref !== wip.ref) {
+          markRef(wip);
+        }
       } else {
         // mount
         // 创建离屏 DOM，并插入父节点
         const instance = createInstance(wip.type, newProps);
         appendAllChildren(instance, wip);
         wip.stateNode = instance;
+
+        // 标记 Ref
+        if (wip.ref !== null) {
+          markRef(wip);
+        }
       }
       bubbleProperties(wip);
       return null;
@@ -77,6 +87,10 @@ export const completeWork = (wip: FiberNode) => {
 
 function markUpdate(wip: FiberNode) {
   wip.flags |= Update;
+}
+
+function markRef(fiber: FiberNode) {
+  fiber.flags |= Ref;
 }
 
 /**

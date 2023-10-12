@@ -10,11 +10,13 @@ import { FiberNode, FiberRootNode } from './fiber';
 import {
   ChildDeletion,
   Flags,
+  LayoutMask,
   MutationMask,
   NoFlags,
   PassiveEffect,
   PassiveMask,
   Placement,
+  Ref,
   Update
 } from './fiberFlags';
 import {
@@ -29,73 +31,124 @@ import { HookHasEffect } from './hookEffectTags';
 
 let nextEffect: FiberNode | null = null;
 
-// dfs 遍历 fiber node，每个节点执行 commitMutationEffectsOnFiber
-export const commitMutationEffects = (
-  finishedWork: FiberNode,
-  root: FiberRootNode
+export const commitEffects = (
+  phrase: 'mutation' | 'layout',
+  flags: Flags,
+  callback: (finifedWork: FiberNode, root: FiberRootNode) => void
 ) => {
-  nextEffect = finishedWork;
+  return (finishedWork: FiberNode, root: FiberRootNode) => {
+    nextEffect = finishedWork;
 
-  while (nextEffect !== null) {
-    const child: FiberNode | null = nextEffect.child;
+    while (nextEffect !== null) {
+      const child: FiberNode | null = nextEffect.child;
 
-    if (
-      (nextEffect.subTreeFlags & (MutationMask | PassiveMask)) !== NoFlags &&
-      child !== null
-    ) {
-      // 向下遍历到第一个 subTreeFlags 为 noFlags 的节点
-      nextEffect = child;
-    } else {
-      // 在第一个 subTreeFlags 为 noFlags 的节点上执行 commitMutationEffectsOnFiber
-      // 之后再往 sibling 节点走, 如果没有 sibling 往父节点走
-      up: while (nextEffect !== null) {
-        commitMutationEffectsOnFiber(nextEffect, root);
+      if ((nextEffect.subTreeFlags & flags) !== NoFlags && child !== null) {
+        // 向下遍历到第一个 subTreeFlags 为 noFlags 的节点
+        nextEffect = child;
+      } else {
+        // 在第一个 subTreeFlags 为 noFlags 的节点上执行 commitMutationEffectsOnFiber
+        // 之后再往 sibling 节点走, 如果没有 sibling 往父节点走
+        up: while (nextEffect !== null) {
+          callback(nextEffect, root);
 
-        const sibling: FiberNode | null = nextEffect.sibling;
-        if (sibling !== null) {
-          nextEffect = sibling;
-          break up;
+          const sibling: FiberNode | null = nextEffect.sibling;
+          if (sibling !== null) {
+            nextEffect = sibling;
+            break up;
+          }
+          nextEffect = nextEffect.return;
         }
-        nextEffect = nextEffect.return;
       }
     }
-  }
+  };
 };
 
-function commitMutationEffectsOnFiber(
-  finisdWork: FiberNode,
+// dfs 遍历 fiber node，每个节点执行 commitMutationEffectsOnFiber
+export const commitMutationEffects = commitEffects(
+  'mutation',
+  MutationMask | PassiveMask,
+  commitMutationEffectsOnFiber
+);
+
+export const commitLayoutEffects = commitEffects(
+  'layout',
+  LayoutMask,
+  commitLayoutEffectsOnFiber
+);
+
+function commitLayoutEffectsOnFiber(
+  finishedWork: FiberNode,
   root: FiberRootNode
 ) {
-  const flags = finisdWork.flags;
+  const { flags, tag } = finishedWork;
+  if ((flags & Ref) !== NoFlags && tag === HostComponent) {
+    // 绑定新的 Ref
+    safelyAttachRef(finishedWork);
+    finishedWork.flags &= ~Ref;
+  }
+}
+
+function commitMutationEffectsOnFiber(
+  finishedWork: FiberNode,
+  root: FiberRootNode
+) {
+  const { flags, tag } = finishedWork;
 
   // check and commit placement
   if ((flags & Placement) !== NoFlags) {
-    commitPlacement(finisdWork);
-    finisdWork.flags &= ~Placement; // 清除 Placement 标记
+    commitPlacement(finishedWork);
+    finishedWork.flags &= ~Placement; // 清除 Placement 标记
   }
   // check and commit update
   if ((flags & Update) !== NoFlags) {
     // 因为 commit update 涉及到对 host 环境的节点操作
     // 所以实现放在 renderer 的 hostConfig 里
-    commitUpdate(finisdWork);
-    finisdWork.flags &= ~Update;
+    commitUpdate(finishedWork);
+    finishedWork.flags &= ~Update;
   }
   // check and commit ChildDeletion
   if ((flags & ChildDeletion) !== NoFlags) {
-    const deletions = finisdWork.deletions;
+    const deletions = finishedWork.deletions;
     if (deletions !== null) {
       deletions.forEach((childeToDelete) => {
         commitDeletion(childeToDelete, root);
       });
     }
-    finisdWork.flags &= ~ChildDeletion;
-    finisdWork.deletions = null;
+    finishedWork.flags &= ~ChildDeletion;
+    finishedWork.deletions = null;
   }
 
   if ((flags & PassiveEffect) !== NoFlags) {
-    console.warn('fiber has passive effect', finisdWork);
-    commitPassiveEffect(finisdWork, root, 'update');
-    finisdWork.flags &= ~PassiveEffect;
+    console.warn('fiber has passive effect', finishedWork);
+    commitPassiveEffect(finishedWork, root, 'update');
+    finishedWork.flags &= ~PassiveEffect;
+  }
+
+  if ((flags & Ref) !== NoFlags && tag === HostComponent) {
+    safelyDetachRef(finishedWork);
+  }
+}
+
+function safelyDetachRef(fiber: FiberNode) {
+  const ref = fiber.ref;
+  if (ref !== null) {
+    if (typeof ref === 'function') {
+      ref(null);
+    } else {
+      ref.current = null;
+    }
+  }
+}
+
+function safelyAttachRef(fiber: FiberNode) {
+  const ref = fiber.ref;
+  if (ref !== null) {
+    const instance = fiber.stateNode;
+    if (typeof ref === 'function') {
+      ref(instance);
+    } else {
+      ref.current = instance;
+    }
   }
 }
 
@@ -185,13 +238,12 @@ function commitDeletion(childToDelete: FiberNode, root: FiberRootNode) {
     switch (unmountFiber.tag) {
       case HostComponent:
         recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
-        // TODO: 解绑 ref
+        safelyDetachRef(unmountFiber);
         return;
       case HostText:
         recordHostChildrenToDelete(rootChildrenToDelete, unmountFiber);
         return;
       case FunctionComponent:
-        // TODO:  解绑 ref
         commitPassiveEffect(unmountFiber, root, 'unmount');
         return;
       default:
@@ -250,17 +302,17 @@ function commitNestedComponent(
   }
 }
 
-function commitPlacement(finisdWork: FiberNode) {
+function commitPlacement(finishedWork: FiberNode) {
   // get host parent
-  const hostParent = getHostParent(finisdWork);
+  const hostParent = getHostParent(finishedWork);
 
   // get host sibling
-  const hostSibling = getHostSibling(finisdWork);
+  const hostSibling = getHostSibling(finishedWork);
 
   // find finishedWork DOM and append to hostParent
   if (hostParent !== null) {
     insertOrAppendPlacementNodeIntoContainer(
-      finisdWork,
+      finishedWork,
       hostParent,
       hostSibling
     );

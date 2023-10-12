@@ -23,7 +23,7 @@ export class FiberNode {
   child: FiberNode | null;
   index: number; /*节点自身在 sibling 中的索引*/
 
-  ref: Ref;
+  ref: Ref | null;
   memoizedProps: Props | null; /*当前 fiber 工作结束时的 props 缓存*/
   memoizedState: any;
   /**
@@ -129,11 +129,13 @@ export const createWorkInProgress = (
   wip.memoizedProps = current.memoizedProps;
   wip.memoizedState = current.memoizedState;
 
+  wip.ref = current.ref;
+
   return wip;
 };
 
 export function createFiberFromElement(element: ReactElementType) {
-  const { type, props, key } = element;
+  const { type, props, key, ref } = element;
 
   let fiberTag: WorkTag = FunctionComponent;
 
@@ -145,6 +147,7 @@ export function createFiberFromElement(element: ReactElementType) {
 
   const fiber = new FiberNode(fiberTag, props, key);
   fiber.type = type;
+  fiber.ref = ref;
   return fiber;
 }
 
