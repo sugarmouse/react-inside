@@ -17,3 +17,14 @@ export interface ReactElementType {
 // like const [a, updateA] = useState(0);
 // updateA(a => a + 1) or updateA(1)
 export type Action<State> = State | ((prevState: State) => State);
+
+export type ReactContextType<T> = {
+  $$typeof: symbol | number;
+  Provider: ReactProviderType<T> | null;
+  _currentValue: T;
+};
+
+export type ReactProviderType<T> = {
+  $$typeof: symbol | number;
+  _context: ReactContextType<T> | null;
+};
