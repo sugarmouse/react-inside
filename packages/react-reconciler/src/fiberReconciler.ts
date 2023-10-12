@@ -10,6 +10,10 @@ import {
 } from './updateQueue';
 import { scheduleUpdateOnFiber } from './workLoop';
 import { requestUpdateLane } from './fiberLanes';
+import {
+  unstable_ImmediatePriority,
+  unstable_runWithPriority
+} from 'scheduler';
 
 // create an instance of FiberRootNode,
 // which is the root node of all fiberNodes
@@ -27,14 +31,18 @@ export function updateContainer(
   element: ReactElementType | null,
   root: FiberRootNode
 ) {
-  const hostRootFiber = root.current;
-  const lane = requestUpdateLane();
-  const udpate = createUpdate<ReactElementType | null>(element, lane);
-  enqueueUpdate(
-    hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
-    udpate
-  );
-  // 连接更新流程与调度机制
-  scheduleUpdateOnFiber(hostRootFiber, lane);
+  // 首屏渲染修改为同步的更新
+  unstable_runWithPriority(unstable_ImmediatePriority, () => {
+    const hostRootFiber = root.current;
+    const lane = requestUpdateLane();
+    const udpate = createUpdate<ReactElementType | null>(element, lane);
+    enqueueUpdate(
+      hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
+      udpate
+    );
+    // 连接更新流程与调度机制
+    scheduleUpdateOnFiber(hostRootFiber, lane);
+  });
+
   return element;
 }

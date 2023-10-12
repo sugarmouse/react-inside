@@ -79,7 +79,6 @@ function ensureRootIsScheduled(root: FiberRootNode) {
     root.callbackNode = null;
     return;
   }
-
   const curPriority = updateLane;
   const prvePriority = root.callbackPriority;
 
@@ -190,7 +189,6 @@ function performSyncOnRoot(root: FiberRootNode) {
     ensureRootIsScheduled(root);
     return;
   }
-  root.pendingLanes = nextLane;
 
   const existStatus = renderRoot(root, nextLane, false);
   if (existStatus === RootCompleted) {

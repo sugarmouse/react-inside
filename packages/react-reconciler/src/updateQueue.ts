@@ -96,8 +96,9 @@ export const processUpdateQueue = <State>(
         }
       } else {
         if (newBaseQueueLast !== null) {
-          newBaseQueueLast.next = createUpdate(pending.action, NoLane);
-          newBaseQueueLast = newBaseQueueLast.next;
+          const clone = createUpdate(pending.action, NoLane);
+          newBaseQueueLast = clone;
+          newBaseQueueLast = clone;
         }
         // 执行计算过程
         const action = pending.action;
