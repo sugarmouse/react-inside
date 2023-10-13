@@ -10,7 +10,7 @@ import {
   processUpdateQueue
 } from './updateQueue';
 // import currentBatchConfig from 'react/src/currentBatchConfig';
-import { Action } from 'shared/ReactTypes';
+import { Action, ReactContextType } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
 import { Lane, NoLane, requestUpdateLane } from './fiberLanes';
 import { Flags, PassiveEffect } from './fiberFlags';
@@ -86,15 +86,26 @@ const HooksDispatcherOnMount: Dispatcher = {
   useState: mountState,
   useEffect: mountEffect,
   useTransition: mountTransition,
-  useRef: mountRef
+  useRef: mountRef,
+  useContext: readContext
 };
 
 const HooksDispatcherOnUpdate: Dispatcher = {
   useState: updateState,
   useEffect: updateEffect,
   useTransition: updateTransition,
-  useRef: udpateRef
+  useRef: udpateRef,
+  useContext: readContext
 };
+
+function readContext<T>(context: ReactContextType<T>): T {
+  const consumer = currentlyRenderingFiber;
+  if (consumer === null) {
+    throw new Error('useContext can only invoked in a function component');
+  }
+  const value = context._currentValue;
+  return value;
+}
 
 function mountRef<T>(initValue: T): { current: T } {
   const hook = mountWorkInProgressHook();

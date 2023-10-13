@@ -7,6 +7,7 @@ import {
 } from 'hostConfig';
 import { FiberNode } from './fiber';
 import {
+  ContextProvider,
   Fragment,
   FunctionComponent,
   HostComponent,
@@ -14,6 +15,8 @@ import {
   HostText
 } from './workTags';
 import { NoFlags, Ref, Update } from './fiberFlags';
+import { popProvider } from './fiberContext';
+import { ReactContextType, ReactProviderType } from 'shared/ReactTypes';
 
 // dfs backward
 /**
@@ -74,6 +77,12 @@ export const completeWork = (wip: FiberNode) => {
       // hostRoot 的对应的 host component 在
       // (hostRoot.stataeNode as FiberRootNode).container 上
       // 在 ReactDOM.createRoot().render() 阶段创建并且放在 fiberRootNode.container 上
+      bubbleProperties(wip);
+      return null;
+    case ContextProvider:
+      const providerType = wip.type as ReactProviderType<any>;
+      const context = providerType._context as ReactContextType<any>;
+      popProvider(context);
       bubbleProperties(wip);
       return null;
 

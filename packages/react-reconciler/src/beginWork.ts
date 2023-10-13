@@ -1,4 +1,4 @@
-import { ReactElementType } from 'shared/ReactTypes';
+import { ReactElementType, ReactProviderType } from 'shared/ReactTypes';
 import { FiberNode } from './fiber';
 import { UpdateQueue, processUpdateQueue } from './updateQueue';
 import { mountChildFibers, reconcileChildFibers } from './childFibers';
@@ -8,10 +8,12 @@ import {
   HostComponent,
   HostRoot,
   HostText,
-  Fragment
+  Fragment,
+  ContextProvider
 } from './workTags';
 import { Lane } from './fiberLanes';
 import { Ref } from './fiberFlags';
+import { pushProvider } from './fiberContext';
 
 /**
  * 在 mount 阶段，根据 child ReactElement 创建 child FiberNode，并挂在 wip.child 上
@@ -30,6 +32,8 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
       return updateFunctionComponent(wip, renderLane);
     case Fragment:
       return updateFragment(wip);
+    case ContextProvider:
+      return updateContextProvider(wip);
     default:
       if (__DEV__) {
         console.warn(`beginWork unimplemented tag: ${wip.tag}`);
@@ -38,6 +42,24 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
   }
   return null;
 };
+
+function updateContextProvider(wip: FiberNode) {
+  const providerType = wip.type as ReactProviderType<any>;
+  const context = providerType._context;
+
+  if (context === null) {
+    throw new Error('Context is missing at Provider fiberNode');
+  }
+
+  const newProps = wip.pendingProps;
+  const newChildren = newProps.children;
+
+  // 对 context 赋值操作
+  pushProvider(context, newProps.value);
+
+  reconcileChildren(wip, newChildren);
+  return wip.child;
+}
 
 // update state
 // craete child fiberNode

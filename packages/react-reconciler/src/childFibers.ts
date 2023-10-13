@@ -282,7 +282,9 @@ function ChildReconciler(shouldTrackEffects: boolean) {
     if (
       Array.isArray(element) ||
       typeof element === 'string' ||
-      typeof element === 'number'
+      typeof element === 'number' ||
+      element === null ||
+      element === undefined
     ) {
       return index;
     }

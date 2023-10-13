@@ -4,10 +4,12 @@ export type WorkTag =
   | typeof HostRoot
   | typeof HostComponent
   | typeof HostText
-  | typeof Fragment;
+  | typeof Fragment
+  | typeof ContextProvider;
 
 export const FunctionComponent = 'FunctionComponent';
 export const HostRoot = 'HostRoot';
 export const HostComponent = 'HostComponent';
 export const HostText = 'HostText';
 export const Fragment = 'Fragment';
+export const ContextProvider = 'ContextProvider';
