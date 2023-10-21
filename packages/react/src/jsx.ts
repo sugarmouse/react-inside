@@ -11,7 +11,7 @@ import {
 const ReactElement = function (
   type: Type,
   key: Key,
-  ref: Ref,
+  ref: Ref | null,
   props: Props
 ): ReactElementType {
   const element = {
@@ -29,7 +29,7 @@ const ReactElement = function (
 export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
   let key: Key = null;
   const props: Props = {};
-  let ref: Ref = null;
+  let ref: Ref | null = null;
 
   for (const prop in config) {
     const val = config[prop];
@@ -70,7 +70,7 @@ export const jsx = (type: ElementType, config: any, ...maybeChildren: any) => {
 export const jsxDEV = (type: ElementType, config: any) => {
   let key: Key = null;
   const props: Props = {};
-  let ref: Ref = null;
+  let ref: Ref | null = null;
 
   for (const prop in config) {
     const val = config[prop];

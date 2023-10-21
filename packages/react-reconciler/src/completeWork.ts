@@ -12,9 +12,11 @@ import {
   FunctionComponent,
   HostComponent,
   HostRoot,
-  HostText
+  HostText,
+  OffscreenComponent,
+  SuspenseComponent
 } from './workTags';
-import { NoFlags, Ref, Update } from './fiberFlags';
+import { NoFlags, Ref, Update, Visibility } from './fiberFlags';
 import { popProvider } from './fiberContext';
 import { ReactContextType, ReactProviderType } from 'shared/ReactTypes';
 
@@ -74,6 +76,7 @@ export const completeWork = (wip: FiberNode) => {
     case HostRoot:
     case FunctionComponent:
     case Fragment:
+    case OffscreenComponent:
       // hostRoot 的对应的 host component 在
       // (hostRoot.stataeNode as FiberRootNode).container 上
       // 在 ReactDOM.createRoot().render() 阶段创建并且放在 fiberRootNode.container 上
@@ -83,6 +86,28 @@ export const completeWork = (wip: FiberNode) => {
       const providerType = wip.type as ReactProviderType<any>;
       const context = providerType._context as ReactContextType<any>;
       popProvider(context);
+      bubbleProperties(wip);
+      return null;
+    case SuspenseComponent:
+      // 在 Suspense fiber node 进行比较，是因为 归的过程可能不会经过 offscrren fiber
+
+      const offscreenFiber = wip.child as FiberNode;
+      const isHidden = offscreenFiber.pendingProps.mode === 'hidden';
+      const currentOffscreenFiber = offscreenFiber.alternate as FiberNode;
+      if (currentOffscreenFiber !== null) {
+        // update
+        const wasHidden = currentOffscreenFiber.pendingProps.mode === 'hidden';
+
+        if (wasHidden !== isHidden) {
+          // visible -> hidden
+          offscreenFiber.flags != Visibility;
+          bubbleProperties(offscreenFiber);
+        }
+      } else if (isHidden) {
+        // mount hidden
+        offscreenFiber.flags |= Visibility;
+        bubbleProperties(offscreenFiber);
+      }
       bubbleProperties(wip);
       return null;
 

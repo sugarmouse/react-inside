@@ -3,8 +3,12 @@ import {
   Instance,
   appendChildToContainer,
   commitUpdate,
+  hideInstance,
+  hideTextInstance,
   insertChildToContainer,
-  removeChild
+  removeChild,
+  showInstance,
+  showTextInstance
 } from 'hostConfig';
 import { FiberNode, FiberRootNode } from './fiber';
 import {
@@ -17,13 +21,15 @@ import {
   PassiveMask,
   Placement,
   Ref,
-  Update
+  Update,
+  Visibility
 } from './fiberFlags';
 import {
   FunctionComponent,
   HostComponent,
   HostRoot,
-  HostText
+  HostText,
+  OffscreenComponent
 } from './workTags';
 import { PendingPassiveEffects } from './fiber';
 import { Effect, FCUpdateQueue } from './fiberHooks';
@@ -126,6 +132,86 @@ function commitMutationEffectsOnFiber(
 
   if ((flags & Ref) !== NoFlags && tag === HostComponent) {
     safelyDetachRef(finishedWork);
+  }
+
+  if ((flags & Visibility) !== NoFlags && tag === OffscreenComponent) {
+    const isHidden = finishedWork.pendingProps.mode === 'hidden';
+    // 找到所有子树的顶层 host 节点，处理其在 host 环境中的可见性
+    // 对于浏览器环境就是设置 display 属性
+    toggleHostSubtreeVisibility(finishedWork, isHidden);
+    finishedWork.flags &= ~Visibility;
+  }
+}
+
+// Toggles the visibility of the host subtree.
+function toggleHostSubtreeVisibility(
+  finishedWork: FiberNode,
+  isHidden: boolean
+) {
+  findHostSubtreeRoot(finishedWork, (subtreeRoot) => {
+    const instance = subtreeRoot.stateNode;
+    if (subtreeRoot.tag === HostComponent) {
+      isHidden ? hideInstance(instance) : showInstance(instance);
+    } else if (subtreeRoot.tag === HostText) {
+      isHidden
+        ? hideTextInstance(instance)
+        : showTextInstance(instance, subtreeRoot.memoizedProps.content);
+    }
+  });
+}
+
+// dfs find the first host-related subtree nodes and invoke callback function on them
+function findHostSubtreeRoot(
+  finishedWork: FiberNode,
+  callback: (subtreeRoot: FiberNode) => void
+) {
+  let node = finishedWork;
+  let hostSubtreeRoot: FiberNode | null = null;
+
+  while (true) {
+    // 找到 HostComponent 或者 HostText 的处理逻辑
+
+    if (node.tag === HostComponent) {
+      if (hostSubtreeRoot === null) {
+        hostSubtreeRoot = node;
+        callback(hostSubtreeRoot);
+      }
+    } else if (node.tag === HostText) {
+      callback(node);
+    } else if (
+      node.tag === OffscreenComponent &&
+      node.pendingProps.mode === 'hidden' &&
+      node !== finishedWork
+    ) {
+      // 嵌套的隐藏的 OffscrrenComponent, 不做任何处理
+    } else if (node.child !== null) {
+      node.child.return = node;
+      node = node.child;
+      continue;
+    }
+
+    if (node === finishedWork) {
+      return;
+    }
+
+    while (node.sibling === null) {
+      if (node.return === null || node.return === finishedWork) {
+        return;
+      }
+
+      if (hostSubtreeRoot === node) {
+        hostSubtreeRoot = null;
+      }
+
+      node = node.return;
+    }
+
+    if (hostSubtreeRoot === node) {
+      hostSubtreeRoot = null;
+    }
+
+    node.sibling.return = node.return;
+    node = node.sibling;
   }
 }
 

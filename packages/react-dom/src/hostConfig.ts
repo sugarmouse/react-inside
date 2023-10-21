@@ -74,3 +74,21 @@ export const sheduleMicroTask =
     : typeof Promise === 'function'
     ? (callback: (...args: any) => void) => Promise.resolve().then(callback)
     : setTimeout;
+
+export function hideInstance(instance: Instance) {
+  const style = (instance as HTMLElement).style;
+  style.setProperty('display', 'none', 'important');
+}
+
+export function showInstance(instance: Instance) {
+  const style = (instance as HTMLElement).style;
+  style.setProperty('display', '', 'important');
+}
+
+export function hideTextInstance(textInstance: TextInstance) {
+  textInstance.nodeValue = '';
+}
+
+export function showTextInstance(textInstance: TextInstance, content: string) {
+  textInstance.nodeValue = content;
+}

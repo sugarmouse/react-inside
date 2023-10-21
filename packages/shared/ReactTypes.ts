@@ -9,7 +9,7 @@ export interface ReactElementType {
   key: Key;
   type: Type;
   props: Props;
-  ref: Ref;
+  ref: Ref | null;
   __mark: string;
 }
 
