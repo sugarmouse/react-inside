@@ -32,6 +32,10 @@ export const useContext: Dispatcher['useContext'] = (context) => {
   const dispatcher = resolveDispatcher();
   return dispatcher.useContext(context);
 };
+export const use: Dispatcher['use'] = (useable) => {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.use(useable);
+};
 
 // 内部数据共享层
 // 放在 shared 包中中转使用

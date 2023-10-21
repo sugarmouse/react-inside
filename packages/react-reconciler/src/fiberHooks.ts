@@ -10,11 +10,13 @@ import {
   processUpdateQueue
 } from './updateQueue';
 // import currentBatchConfig from 'react/src/currentBatchConfig';
-import { Action, ReactContextType } from 'shared/ReactTypes';
+import { Action, ReactContextType, Thenable, Usable } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
 import { Lane, NoLane, requestUpdateLane } from './fiberLanes';
 import { Flags, PassiveEffect } from './fiberFlags';
 import { HookHasEffect, Passive } from './hookEffectTags';
+import { trackUsedThenabel as trackUsedThenable } from './thenable';
+import { REACT_CONTEXT_TYPE } from 'shared/ReactSymbols';
 
 let currentlyRenderingFiber: FiberNode | null = null;
 let workInProgressHook: Hook | null = null;
@@ -87,7 +89,8 @@ const HooksDispatcherOnMount: Dispatcher = {
   useEffect: mountEffect,
   useTransition: mountTransition,
   useRef: mountRef,
-  useContext: readContext
+  useContext: readContext,
+  use: use
 };
 
 const HooksDispatcherOnUpdate: Dispatcher = {
@@ -95,7 +98,8 @@ const HooksDispatcherOnUpdate: Dispatcher = {
   useEffect: updateEffect,
   useTransition: updateTransition,
   useRef: udpateRef,
-  useContext: readContext
+  useContext: readContext,
+  use: use
 };
 
 function readContext<T>(context: ReactContextType<T>): T {
@@ -415,4 +419,23 @@ function updateWorkInProgressHook(): Hook {
   }
 
   return workInProgressHook;
+}
+
+// TODO: add use hook impl
+
+function use<T>(usable: Usable<T>): T {
+  if (usable !== null && typeof usable === 'object') {
+    if (typeof (usable as Thenable<T>).then === 'function') {
+      // This is a thenable.
+      const thenable = usable as Thenable<T>;
+      return trackUsedThenable(thenable);
+    } else if (
+      (usable as ReactContextType<T>).$$typeof === REACT_CONTEXT_TYPE
+    ) {
+      const context = usable as ReactContextType<T>;
+      return readContext(context);
+    }
+  }
+
+  throw new Error('An unsupported type was passed to use(): ' + String(usable));
 }
