@@ -329,7 +329,6 @@ function dispatchSetState<State>(
   action: Action<State>
 ) {
   const lane = requestUpdateLane();
-  console.log('通过 setState 出发更新， lane is: ', lane);
   const update = createUpdate<State>(action, lane);
   enqueueUpdate(updateQueue, update);
   scheduleUpdateOnFiber(fiber, lane);
@@ -438,4 +437,10 @@ function use<T>(usable: Usable<T>): T {
   }
 
   throw new Error('An unsupported type was passed to use(): ' + String(usable));
+}
+
+export function resetHooksOnUnwind(wip: FiberNode) {
+  currentlyRenderingFiber = null;
+  currentHook = null;
+  workInProgressHook = null;
 }

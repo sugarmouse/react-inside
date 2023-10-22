@@ -19,6 +19,7 @@ import {
 import { NoFlags, Ref, Update, Visibility } from './fiberFlags';
 import { popProvider } from './fiberContext';
 import { ReactContextType, ReactProviderType } from 'shared/ReactTypes';
+import { popSuspenseHandler } from './suspenseContext';
 
 // dfs backward
 /**
@@ -90,17 +91,17 @@ export const completeWork = (wip: FiberNode) => {
       return null;
     case SuspenseComponent:
       // 在 Suspense fiber node 进行比较，是因为 归的过程可能不会经过 offscrren fiber
-
+      popSuspenseHandler();
       const offscreenFiber = wip.child as FiberNode;
       const isHidden = offscreenFiber.pendingProps.mode === 'hidden';
-      const currentOffscreenFiber = offscreenFiber.alternate as FiberNode;
+      const currentOffscreenFiber = offscreenFiber.alternate;
       if (currentOffscreenFiber !== null) {
         // update
         const wasHidden = currentOffscreenFiber.pendingProps.mode === 'hidden';
 
         if (wasHidden !== isHidden) {
           // visible -> hidden
-          offscreenFiber.flags != Visibility;
+          offscreenFiber.flags |= Visibility;
           bubbleProperties(offscreenFiber);
         }
       } else if (isHidden) {

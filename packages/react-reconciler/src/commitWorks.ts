@@ -174,10 +174,12 @@ function findHostSubtreeRoot(
     if (node.tag === HostComponent) {
       if (hostSubtreeRoot === null) {
         hostSubtreeRoot = node;
-        callback(hostSubtreeRoot);
+        callback(node);
       }
     } else if (node.tag === HostText) {
-      callback(node);
+      if (hostSubtreeRoot === null) {
+        callback(node);
+      }
     } else if (
       node.tag === OffscreenComponent &&
       node.pendingProps.mode === 'hidden' &&

@@ -108,6 +108,7 @@ function mountSuspenseFallbackChildren(
   primaryChildren: any,
   fallbackChildren: any
 ) {
+  console.error('mountSuspenseFallbackChildren');
   const primaryChildProps: OffscreenProps = {
     mode: 'hidden',
     children: primaryChildren
@@ -169,7 +170,7 @@ function updateSuspenseFallbackChildren(
     );
   } else {
     // 没有可以复用的 fallback
-    fallbackChildFragment = createWorkInProgress(fallbackChildren, null);
+    fallbackChildFragment = createFiberFromFragment(fallbackChildren, null);
     fallbackChildFragment.flags |= Placement;
   }
 

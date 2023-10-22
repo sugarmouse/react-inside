@@ -12,6 +12,9 @@ export const Visibility = 0b0100000;
 //
 export const DidCapture = 0b1000000;
 
+// unwind
+export const ShouldCapture = 0b10000000;
+
 export const MutationMask =
   Placement | Update | ChildDeletion | Ref | Visibility;
 export const LayoutMask = Ref;

@@ -33,6 +33,10 @@ import {
   mergeLanes
 } from './fiberLanes';
 import { HookHasEffect, Passive } from './hookEffectTags';
+import { SuspenseException, getSuspenseThenable } from './thenable';
+import { resetHooksOnUnwind } from './fiberHooks';
+import { throwException } from './fiberThrow';
+import { unwindWork } from './fiberUnwindWork';
 
 type RootExistStatus = number;
 
@@ -44,6 +48,13 @@ let workInProgress: FiberNode | null = null;
 let wipRootRenderLane: Lane = NoLane;
 // 为了阻止多次调用 commitRoot 时，多次调度副作用
 let rootDoesHasPassiveEffects: boolean = false;
+
+// for  suspended
+type SuspendedReason = 0 | 2;
+const NotSuspended: SuspendedReason = 0;
+const SuspendedOnData: SuspendedReason = 2;
+let wipSuspendedReason: SuspendedReason = NotSuspended;
+let wipThrowValue: any = null;
 
 function prepareFreshStack(root: FiberRootNode, lane: Lane) {
   root.finishedLane = NoLane;
@@ -67,7 +78,7 @@ export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 }
 
 // 调度阶段的入口
-function ensureRootIsScheduled(root: FiberRootNode) {
+export function ensureRootIsScheduled(root: FiberRootNode) {
   const updateLane = getHighestPriorityLane(root.pendingLanes);
   const existingCallback = root.callbackNode;
 
@@ -111,7 +122,7 @@ function ensureRootIsScheduled(root: FiberRootNode) {
   root.callbackPriority = curPriority;
 }
 
-function markRootUpdated(root: FiberRootNode, lane: Lane) {
+export function markRootUpdated(root: FiberRootNode, lane: Lane) {
   root.pendingLanes = mergeLanes(root.pendingLanes, lane);
 }
 
@@ -204,7 +215,6 @@ function performSyncOnRoot(root: FiberRootNode) {
 }
 
 function renderRoot(root: FiberRootNode, lane: Lane, shouldTimeSlice: boolean) {
-  console.log(`shouldTimeSlice: ${shouldTimeSlice}`);
   if (__DEV__) {
     console.log(`开始 ${shouldTimeSlice ? '并发' : '同步'} 更新`);
   }
@@ -216,13 +226,19 @@ function renderRoot(root: FiberRootNode, lane: Lane, shouldTimeSlice: boolean) {
 
   do {
     try {
+      if (wipSuspendedReason !== NotSuspended && workInProgress !== null) {
+        const throwValue = wipThrowValue;
+        // reset
+        wipSuspendedReason = NotSuspended;
+        wipThrowValue = null;
+        // unwind
+        throwAndUnwindWorkLoop(root, workInProgress, throwValue, lane);
+      }
+
       shouldTimeSlice ? workLoopConcurrent() : workLoopSync();
       break;
     } catch (e) {
-      if (__DEV__) {
-        console.warn(`workLoop error: ${e}`);
-      }
-      workInProgress = null;
+      handleThrow(root, e);
     }
   } while (true);
 
@@ -242,6 +258,63 @@ function renderRoot(root: FiberRootNode, lane: Lane, shouldTimeSlice: boolean) {
   // TODO: loop 报错处理
 
   return RootCompleted;
+}
+
+function throwAndUnwindWorkLoop(
+  root: FiberRootNode,
+  unitOfWork: FiberNode,
+  throwValue: any,
+  lane: Lane
+) {
+  // 重置 function component 全局变量
+  resetHooksOnUnwind(unitOfWork);
+  // 请求返回后触发更新
+  // 给距离最近的 Suspense fiberNode 标记 ShouldCapture
+  throwException(root, throwValue, lane);
+  // unwind
+  unwindUnitOfWork(unitOfWork);
+}
+
+// 拿到距离 unitOfWork 最近的 Suspense fiberNode
+function unwindUnitOfWork(unitOfWork: FiberNode) {
+  let incompleteWork: FiberNode | null = unitOfWork;
+
+  do {
+    // check if incompleteWork is the suspense fiber tagged with ShouldCapture
+    // if it is, then remove ShouldCapture and tag DidCapture
+    const next = unwindWork(incompleteWork);
+
+    if (next !== null) {
+      workInProgress = next;
+      return;
+    }
+
+    const returnFiber = incompleteWork.return as FiberNode;
+    if (returnFiber !== null) {
+      // 清楚之前 beginWork 留下的副作用
+      returnFiber.deletions = null;
+    }
+    incompleteWork = returnFiber;
+  } while (incompleteWork !== null);
+
+  // 使用了 use， 但是没有 Suspense 包裹
+  // TODO:
+  workInProgress = null;
+}
+
+// for handle Error Boundary and self-defined Exception
+function handleThrow(root: FiberRootNode, throwValue: any) {
+  if (throwValue === SuspenseException) {
+    // Suspense
+    throwValue = getSuspenseThenable();
+    wipSuspendedReason = SuspendedOnData;
+  } else {
+    // TODO: unhandled error, like Error Boundary
+    if (__DEV__) {
+      console.warn('renderRoot loop catched an unhandled error: ', throwValue);
+    }
+  }
+  wipThrowValue = throwValue;
 }
 
 function commitRoot(root: FiberRootNode) {
