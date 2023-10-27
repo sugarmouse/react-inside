@@ -349,7 +349,7 @@ function ChildReconciler(shouldTrackEffects: boolean) {
     }
 
     if (__DEV__) {
-      console.warn(`unhandled fiber type: ${String(newChild)}`);
+      console.warn('unhandled fiber type:', newChild);
     }
 
     return null;

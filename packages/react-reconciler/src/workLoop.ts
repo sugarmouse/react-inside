@@ -27,9 +27,10 @@ import {
   Lane,
   NoLane,
   SyncLane,
-  getHighestPriorityLane,
+  getNextLane,
   lanesToSchedulerPriority,
   markRootFinished,
+  markRootSuspended,
   mergeLanes
 } from './fiberLanes';
 import { HookHasEffect, Passive } from './hookEffectTags';
@@ -40,14 +41,18 @@ import { unwindWork } from './fiberUnwindWork';
 
 type RootExistStatus = number;
 
-const RootInComplete: RootExistStatus = 1;
+const RootInProgress: RootExistStatus = 0;
+const RootInComplete: RootExistStatus = 1; // concurrent render interupted status
 const RootCompleted: RootExistStatus = 2;
+const RootDidNotComplete: RootExistStatus = 3; // render root suspense status
 // TODO: 执行过程中报错状态
 
 let workInProgress: FiberNode | null = null;
 let wipRootRenderLane: Lane = NoLane;
 // 为了阻止多次调用 commitRoot 时，多次调度副作用
 let rootDoesHasPassiveEffects: boolean = false;
+
+let wipRootExistStatus: RootExistStatus = RootInProgress;
 
 // for  suspended
 type SuspendedReason = 0 | 2;
@@ -62,6 +67,10 @@ function prepareFreshStack(root: FiberRootNode, lane: Lane) {
   //create wip HostRootFiber
   workInProgress = createWorkInProgress(root.current, {});
   wipRootRenderLane = lane;
+
+  wipRootExistStatus = RootInProgress;
+  wipSuspendedReason = NotSuspended;
+  wipThrowValue = null;
 }
 
 // 触发更新入口
@@ -79,7 +88,7 @@ export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
 
 // 调度阶段的入口
 export function ensureRootIsScheduled(root: FiberRootNode) {
-  const updateLane = getHighestPriorityLane(root.pendingLanes);
+  const updateLane = getNextLane(root);
   const existingCallback = root.callbackNode;
 
   if (updateLane === NoLane) {
@@ -157,7 +166,7 @@ function performConcurrentOnRoot(
     }
   }
 
-  const lane = getHighestPriorityLane(root.pendingLanes);
+  const lane = getNextLane(root);
   const curNode = root.callbackNode;
   if (lane === NoLane) {
     return null;
@@ -166,27 +175,32 @@ function performConcurrentOnRoot(
   // render 阶段
   const existStatus = renderRoot(root, lane, !needSync);
 
-  ensureRootIsScheduled(root);
+  switch (existStatus) {
+    case RootCompleted:
+      // 当前任务更新结束,重置操作
+      const finishedWork = root.current.alternate;
+      root.finishedWork = finishedWork;
+      root.finishedLane = lane;
+      wipRootRenderLane = NoLane;
+      commitRoot(root);
+      break;
 
-  if (existStatus === RootInComplete) {
-    // 中断
-    if (root.callbackNode !== curNode) {
-      // 有更高优先级的任务插入进来
-      return;
-    }
-    // 没有更高优先级的任务插入进来,继续执行上一次中断的任务
-    return performConcurrentOnRoot.bind(null, root, didTimeout);
-  }
+    case RootInComplete:
+      // 中断
+      if (root.callbackNode !== curNode) {
+        // 有更高优先级的任务插入进来
+        return;
+      }
+      // 没有更高优先级的任务插入进来,继续执行上一次中断的任务
+      return performConcurrentOnRoot.bind(null, root, didTimeout);
 
-  if (existStatus === RootCompleted) {
-    // 当前任务更新结束,重置操作
-    const finishedWork = root.current.alternate;
-    root.finishedWork = finishedWork;
-    root.finishedLane = lane;
-    wipRootRenderLane = NoLane;
-    commitRoot(root);
-  } else if (__DEV__) {
-    console.warn(`unhandled render existStatus in performSyncOnRoot`);
+    case RootDidNotComplete:
+      markRootSuspended(root, lane);
+      ensureRootIsScheduled(root);
+      break;
+
+    default:
+      console.warn(`unhandled render existStatus in performSyncOnRoot`);
   }
 }
 
@@ -194,7 +208,7 @@ function performConcurrentOnRoot(
 function performSyncOnRoot(root: FiberRootNode) {
   // initialize
 
-  const nextLane = getHighestPriorityLane(root.pendingLanes);
+  const nextLane = getNextLane(root);
   if (nextLane !== SyncLane) {
     // NoLane
     // 或者其他优先级低的 lane
@@ -203,14 +217,26 @@ function performSyncOnRoot(root: FiberRootNode) {
   }
 
   const existStatus = renderRoot(root, nextLane, false);
-  if (existStatus === RootCompleted) {
-    const finishedWork = root.current.alternate;
-    root.finishedWork = finishedWork;
-    root.finishedLane = nextLane;
-    wipRootRenderLane = NoLane;
-    commitRoot(root);
-  } else if (__DEV__) {
-    console.warn(`unhandled render existStatus in performSyncOnRoot`);
+
+  switch (existStatus) {
+    case RootCompleted:
+      const finishedWork = root.current.alternate;
+      root.finishedWork = finishedWork;
+      root.finishedLane = nextLane;
+      wipRootRenderLane = NoLane;
+      commitRoot(root);
+      break;
+
+    case RootDidNotComplete:
+      wipRootRenderLane = NoLane;
+      markRootSuspended(root, nextLane);
+      ensureRootIsScheduled(root);
+      break;
+
+    default:
+      if (__DEV__) {
+        console.warn(`unhandled render existStatus in performSyncOnRoot`);
+      }
   }
 }
 
@@ -241,6 +267,10 @@ function renderRoot(root: FiberRootNode, lane: Lane, shouldTimeSlice: boolean) {
       handleThrow(root, e);
     }
   } while (true);
+
+  if (wipRootExistStatus !== RootInProgress) {
+    return wipRootExistStatus;
+  }
 
   // 中断执行 || render 执行完
   if (shouldTimeSlice && workInProgress !== null) {
@@ -298,7 +328,7 @@ function unwindUnitOfWork(unitOfWork: FiberNode) {
   } while (incompleteWork !== null);
 
   // 使用了 use， 但是没有 Suspense 包裹
-  // TODO:
+  wipRootExistStatus = RootDidNotComplete;
   workInProgress = null;
 }
 
@@ -362,6 +392,9 @@ function commitRoot(root: FiberRootNode) {
 
     commitMutationEffects(finishedWork, root);
     root.current = finishedWork; // 双缓存机制的 fiber 树切换
+    if (__DEV__) {
+      console.warn('commit mutation 结束，fiber 树已翻转');
+    }
     // layout
     commitLayoutEffects(finishedWork, root);
   } else {

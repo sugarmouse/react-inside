@@ -5,23 +5,23 @@ import { Cpn } from './Cpn';
 // 简单例子 + 没有Suspense catch的情况
 function App() {
   return (
-    <Suspense fallback={<div>loading...</div>}>
-      <Cpn id={0} timeout={1000} />
-    </Suspense>
-    // <Cpn id={0} timeout={1000} />
+    // <Suspense fallback={<div>loading...</div>}>
+    //   <Cpn id={0} timeout={1000} />
+    // </Suspense>
+    <Cpn id={0} timeout={3000} />
   );
 }
 
-// 嵌套Suspense
+// // 嵌套Suspense;
 // function App() {
-// 	return (
-// 		<Suspense fallback={<div>外层...</div>}>
-// 			<Cpn id={0} timeout={1000} />
-// 			<Suspense fallback={<div>内层...</div>}>
-// 				<Cpn id={1} timeout={3000} />
-// 			</Suspense>
-// 		</Suspense>
-// 	);
+//   return (
+//     <Suspense fallback={<div>外层...</div>}>
+//       <Cpn id={0} timeout={1000} />
+//       <Suspense fallback={<div>内层...</div>}>
+//         <Cpn id={1} timeout={3000} />
+//       </Suspense>
+//     </Suspense>
+//   );
 // }
 
 // 缓存快速失效

@@ -81,9 +81,15 @@ export class FiberRootNode {
   container: Container; // point to react app container wihich is  host-unrelated root
   current: FiberNode;
   finishedWork: FiberNode | null; // point to the update-completed hostRootFiber
+
   pendingLanes: Lanes;
+
   finishedLane: Lane;
   pendingPassiveEffects: PendingPassiveEffects; // collect effect after update
+
+  // 为了区分 render 阶段bu
+  suspendedLanes: Lanes;
+  pingdLanes: Lanes;
 
   callbackNode: CallbackNode | null;
   callbackPriority: Lane;
@@ -96,8 +102,11 @@ export class FiberRootNode {
     this.current = hostRootFiber;
     hostRootFiber.stateNode = this;
     this.finishedWork = null;
+
     this.pendingLanes = NoLanes;
     this.finishedLane = NoLane;
+    this.suspendedLanes = NoLane;
+    this.pingdLanes = NoLane;
 
     this.callbackNode = null;
     this.callbackPriority = NoLane;
