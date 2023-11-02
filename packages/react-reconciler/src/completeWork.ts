@@ -20,6 +20,7 @@ import { NoFlags, Ref, Update, Visibility } from './fiberFlags';
 import { popProvider } from './fiberContext';
 import { ReactContextType, ReactProviderType } from 'shared/ReactTypes';
 import { popSuspenseHandler } from './suspenseContext';
+import { NoLane, NoLanes, mergeLanes } from './fiberLanes';
 
 // dfs backward
 /**
@@ -168,14 +169,21 @@ function appendAllChildren(parent: Container | Instance, wip: FiberNode) {
 function bubbleProperties(wip: FiberNode) {
   let subTreeFlags = NoFlags;
   let child = wip.child;
+  let newChildLanes = NoLanes;
 
   while (child !== null) {
     subTreeFlags |= child.subTreeFlags;
     subTreeFlags |= child.flags;
+
+    newChildLanes = mergeLanes(
+      newChildLanes,
+      mergeLanes(child.lanes, child.childLanes)
+    );
 
     child.return = wip;
     child = child.sibling;
   }
 
   wip.subTreeFlags = subTreeFlags;
+  wip.childLanes = newChildLanes;
 }

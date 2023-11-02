@@ -383,3 +383,28 @@ function useFiber(fiber: FiberNode, pendingProps: Props): FiberNode {
 
 export const reconcileChildFibers = ChildReconciler(true);
 export const mountChildFibers = ChildReconciler(false);
+
+export function cloneChildFibers(wip: FiberNode) {
+  if (wip.child === null) {
+    return;
+  }
+
+  // clone 子节点
+  let currentChild = wip.child;
+  let newChild = createWorkInProgress(currentChild, currentChild.pendingProps);
+
+  wip.child = newChild;
+  newChild.return = wip;
+
+  // clone 子节点的 sibling
+  while (currentChild.sibling !== null) {
+    currentChild = currentChild.sibling;
+    newChild.sibling = createWorkInProgress(
+      currentChild,
+      currentChild.pendingProps
+    );
+
+    newChild = newChild.sibling;
+    newChild.return = wip;
+  }
+}

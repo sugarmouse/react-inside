@@ -12,6 +12,7 @@
     "demo:ref": "vite serve demo/ref --config scripts/vite/vite.config.js --force",
     "demo:ctx": "vite serve demo/context --config scripts/vite/vite.config.js --force",
     "demo:use": "vite serve demo/suspense-use --config scripts/vite/vite.config.js --force",
+    "demo:bailout": "vite serve demo/bailout --config scripts/vite/vite.config.js --force",
     "test": "jest --config scripts/jest/jest.config.js"
   },
   "keywords": [],

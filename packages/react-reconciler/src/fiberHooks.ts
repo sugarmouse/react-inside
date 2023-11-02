@@ -12,11 +12,18 @@ import {
 // import currentBatchConfig from 'react/src/currentBatchConfig';
 import { Action, ReactContextType, Thenable, Usable } from 'shared/ReactTypes';
 import { scheduleUpdateOnFiber } from './workLoop';
-import { Lane, NoLane, requestUpdateLane } from './fiberLanes';
+import {
+  Lane,
+  NoLane,
+  mergeLanes,
+  removeLanes,
+  requestUpdateLane
+} from './fiberLanes';
 import { Flags, PassiveEffect } from './fiberFlags';
 import { HookHasEffect, Passive } from './hookEffectTags';
 import { trackUsedThenabel as trackUsedThenable } from './thenable';
 import { REACT_CONTEXT_TYPE } from 'shared/ReactSymbols';
+import { markWipReceivedUpdate } from './beginWork';
 
 let currentlyRenderingFiber: FiberNode | null = null;
 let workInProgressHook: Hook | null = null;
@@ -278,11 +285,30 @@ function updateState<State>(): [State, Dispatch<State>] {
   }
 
   if (baseQueue !== null) {
+    const prevState = hook.memoizedState;
     const {
       memoizedState,
       baseQueue: newBaseQueue,
       baseState: newBaseState
-    } = processUpdateQueue(baseState, baseQueue, renderLane);
+    } = processUpdateQueue(
+      baseState,
+      baseQueue,
+      renderLane,
+      (skippedUpdate) => {
+        const skippedLane = skippedUpdate.lane;
+        const fiber = currentlyRenderingFiber as FiberNode;
+        // 在 beginWork 的时候 fiber.lanes 被重置为 NoLanes
+        fiber.lanes = mergeLanes(fiber.lanes, skippedLane);
+      }
+    );
+
+    // bailout
+    if (!Object.is(prevState, memoizedState)) {
+      if (__DEV__) {
+        console.warn('prevState and curState is Same');
+      }
+      markWipReceivedUpdate();
+    }
 
     hook.memoizedState = memoizedState;
     hook.baseQueue = newBaseQueue;
@@ -330,7 +356,7 @@ function dispatchSetState<State>(
 ) {
   const lane = requestUpdateLane();
   const update = createUpdate<State>(action, lane);
-  enqueueUpdate(updateQueue, update);
+  enqueueUpdate(updateQueue, update, fiber, lane);
   scheduleUpdateOnFiber(fiber, lane);
 }
 
@@ -420,8 +446,6 @@ function updateWorkInProgressHook(): Hook {
   return workInProgressHook;
 }
 
-// TODO: add use hook impl
-
 function use<T>(usable: Usable<T>): T {
   if (usable !== null && typeof usable === 'object') {
     if (typeof (usable as Thenable<T>).then === 'function') {
@@ -443,4 +467,12 @@ export function resetHooksOnUnwind(wip: FiberNode) {
   currentlyRenderingFiber = null;
   currentHook = null;
   workInProgressHook = null;
+}
+
+export function bailoutHook(wip: FiberNode, renderLane: Lane) {
+  const current = wip.alternate as FiberNode;
+  wip.updateQueue = current.updateQueue;
+  wip.flags &= ~PassiveEffect;
+
+  current.lanes = removeLanes(current.lanes, renderLane);
 }

@@ -38,7 +38,9 @@ export function updateContainer(
     const udpate = createUpdate<ReactElementType | null>(element, lane);
     enqueueUpdate(
       hostRootFiber.updateQueue as UpdateQueue<ReactElementType | null>,
-      udpate
+      udpate,
+      hostRootFiber,
+      lane
     );
     // 连接更新流程与调度机制
     scheduleUpdateOnFiber(hostRootFiber, lane);

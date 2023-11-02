@@ -41,6 +41,10 @@ export class FiberNode {
   updateQueue: unknown;
   deletions: FiberNode[] | null;
 
+  // 记录当前节点以及子树拥有的更新，为了性能优化
+  lanes: Lanes;
+  childLanes: Lanes;
+
   constructor(tag: WorkTag, pendingProps: Props, key: Key) {
     this.tag = tag;
     this.key = key || null;
@@ -68,6 +72,9 @@ export class FiberNode {
     this.flags = NoFlags;
     this.subTreeFlags = NoFlags;
     this.deletions = null;
+
+    this.lanes = NoLanes;
+    this.childLanes = NoLanes;
   }
 }
 
@@ -148,6 +155,9 @@ export const createWorkInProgress = (
   wip.memoizedState = current.memoizedState;
 
   wip.ref = current.ref;
+
+  wip.lanes = current.lanes;
+  wip.childLanes = current.childLanes;
 
   return wip;
 };

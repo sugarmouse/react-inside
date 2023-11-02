@@ -75,7 +75,7 @@ function prepareFreshStack(root: FiberRootNode, lane: Lane) {
 
 // 触发更新入口
 export function scheduleUpdateOnFiber(fiber: FiberNode, lane: Lane) {
-  const root = markUpdateFromFiberToRoot(fiber);
+  const root = markUpdateLaneFromFiberToRoot(fiber, lane);
   if (root === null) {
     console.warn(
       'schduleUpdateOnFiber error:can not find FiberRootNode, FiberRootNode is null'
@@ -136,10 +136,16 @@ export function markRootUpdated(root: FiberRootNode, lane: Lane) {
 }
 
 // find FiberRootNode from the fiberNode passed in
-function markUpdateFromFiberToRoot(fiber: FiberNode) {
+function markUpdateLaneFromFiberToRoot(fiber: FiberNode, lane: Lane) {
   let node = fiber;
   let parent = fiber.return;
   while (parent !== null) {
+    parent.childLanes = mergeLanes(parent.childLanes, lane);
+    const current = parent.alternate;
+    if (current !== null) {
+      current.childLanes = mergeLanes(parent.childLanes, lane);
+    }
+
     node = parent;
     parent = parent.return;
   }
