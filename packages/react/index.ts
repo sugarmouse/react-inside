@@ -10,6 +10,7 @@ export {
 } from 'shared/ReactSymbols';
 
 export { createContext } from './src/context';
+export { memo } from './src/memo';
 
 // const [a, setA] = useState(0);
 export const useState: Dispatcher['useState'] = (initialState) => {

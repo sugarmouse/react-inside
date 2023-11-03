@@ -13,6 +13,7 @@ import {
   HostComponent,
   HostRoot,
   HostText,
+  MemoComponent,
   OffscreenComponent,
   SuspenseComponent
 } from './workTags';
@@ -79,6 +80,7 @@ export const completeWork = (wip: FiberNode) => {
     case FunctionComponent:
     case Fragment:
     case OffscreenComponent:
+    case MemoComponent:
       // hostRoot 的对应的 host component 在
       // (hostRoot.stataeNode as FiberRootNode).container 上
       // 在 ReactDOM.createRoot().render() 阶段创建并且放在 fiberRootNode.container 上

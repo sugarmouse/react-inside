@@ -62,7 +62,11 @@ export interface Effect {
 }
 
 // for function component in beginWork
-export function renderWithHooks(wip: FiberNode, lane: Lane) {
+export function renderWithHooks(
+  wip: FiberNode,
+  Component: FiberNode['type'],
+  lane: Lane
+) {
   // 拿到当前 FiberNode
   currentlyRenderingFiber = wip;
   // 重置 hook 链表
@@ -82,7 +86,6 @@ export function renderWithHooks(wip: FiberNode, lane: Lane) {
     currentDispatcher.current = HooksDispatcherOnMount;
   }
 
-  const Component = wip.type;
   const props = wip.pendingProps;
   const children = Component(props);
 

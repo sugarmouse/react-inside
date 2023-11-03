@@ -8,6 +8,7 @@ export let REACT_PROVIDER_TYPE: ReactElementLikeType = 0xeacd;
 export let REACT_CONTEXT_TYPE: ReactElementLikeType = 0xeace;
 export let REACT_SUSPENSE_TYPE: ReactElementLikeType = 0xead1;
 export let REACT_SUSPENSE_LIST_TYPE: ReactElementLikeType = 0xead8;
+export let REACT_MEMO_TYPE: ReactElementLikeType = 0xead3;
 
 if (supportSymbol) {
   REACT_ELEMENT_TYPE = Symbol.for('react.element');
@@ -16,4 +17,5 @@ if (supportSymbol) {
   REACT_CONTEXT_TYPE = Symbol.for('react.context');
   REACT_SUSPENSE_TYPE = Symbol.for('react.suspense');
   REACT_SUSPENSE_LIST_TYPE = Symbol.for('react.suspense_list');
+  REACT_MEMO_TYPE = Symbol.for('react.memo');
 }

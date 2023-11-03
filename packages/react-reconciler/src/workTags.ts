@@ -7,7 +7,8 @@ export type WorkTag =
   | typeof Fragment
   | typeof ContextProvider
   | typeof SuspenseComponent
-  | typeof OffscreenComponent;
+  | typeof OffscreenComponent
+  | typeof MemoComponent;
 
 export const FunctionComponent = 'FunctionComponent';
 export const HostRoot = 'HostRoot';
@@ -18,3 +19,5 @@ export const ContextProvider = 'ContextProvider';
 
 export const SuspenseComponent = 'SuspenseComponent';
 export const OffscreenComponent = 'OffscreenComponent';
+
+export const MemoComponent = 'MemoComponent';

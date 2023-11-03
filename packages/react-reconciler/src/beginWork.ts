@@ -21,7 +21,8 @@ import {
   Fragment,
   ContextProvider,
   SuspenseComponent,
-  OffscreenComponent
+  OffscreenComponent,
+  MemoComponent
 } from './workTags';
 import { Lane, NoLanes, includeSomeLanes } from './fiberLanes';
 import {
@@ -33,6 +34,7 @@ import {
 } from './fiberFlags';
 import { pushProvider } from './fiberContext';
 import { pushSuspenseHandler } from './suspenseContext';
+import { shallowEquals } from 'shared/shallowEquals';
 
 // 是否命中 bailout 优化策略
 let didReceiveUpdate = false;
@@ -92,7 +94,7 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
     case HostText:
       return null;
     case FunctionComponent:
-      return updateFunctionComponent(wip, renderLane);
+      return updateFunctionComponent(wip, wip.type, renderLane);
     case Fragment:
       return updateFragment(wip);
     case ContextProvider:
@@ -101,6 +103,8 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
       return updateSuspenseComponent(wip);
     case OffscreenComponent:
       return updateOffscreenComponent(wip);
+    case MemoComponent:
+      return updateMemoComponent(wip, renderLane);
     default:
       if (__DEV__) {
         console.warn(`beginWork unimplemented tag: ${wip.tag}`);
@@ -109,6 +113,27 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
   }
   return null;
 };
+
+function updateMemoComponent(wip: FiberNode, renderLane: Lane) {
+  const current = wip.alternate;
+  const nextProps = wip.pendingProps;
+  const Component = wip.type.type;
+
+  if (current !== null) {
+    const prevProps = current.memoizedProps;
+
+    if (shallowEquals(prevProps, nextProps) && current.ref === wip.ref) {
+      didReceiveUpdate = false;
+      wip.pendingProps = prevProps;
+
+      if (!checkScheduleUpdateOrContext(current, renderLane)) {
+        wip.lanes = current.lanes;
+        return bailoutOnAlreadyFinishedWork(wip, renderLane);
+      }
+    }
+  }
+  return updateFunctionComponent(wip, Component, renderLane);
+}
 
 function bailoutOnAlreadyFinishedWork(wip: FiberNode, renderLane: Lane) {
   if (!includeSomeLanes(wip.childLanes, renderLane)) {
@@ -364,9 +389,13 @@ function updateHostComponent(wip: FiberNode) {
   return wip.child;
 }
 
-function updateFunctionComponent(wip: FiberNode, renderLane: Lane) {
+function updateFunctionComponent(
+  wip: FiberNode,
+  Component: FiberNode['type'],
+  renderLane: Lane
+) {
   // 执行组件的 render
-  const nextChildren = renderWithHooks(wip, renderLane);
+  const nextChildren = renderWithHooks(wip, Component, renderLane);
 
   const current = wip.alternate;
 
