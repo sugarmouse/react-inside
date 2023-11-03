@@ -8,6 +8,8 @@ export interface Update<State> {
   action: Action<State>;
   lane: Lane;
   next: Update<any> | null;
+  hasEagerState: boolean;
+  eagerState: State | null;
 }
 
 export interface UpdateQueue<State> {
@@ -20,11 +22,18 @@ export interface UpdateQueue<State> {
 /**
  * 返回一个一个有 action 属性的对象，作为 update
  */
-export const createUpdate = <State>(action: Action<State>, lane: Lane) => {
+export const createUpdate = <State>(
+  action: Action<State>,
+  lane: Lane,
+  hasEagerState = false,
+  eagerState = null
+): Update<State> => {
   return {
     action,
     lane,
-    next: null
+    next: null,
+    hasEagerState,
+    eagerState
   };
 };
 
@@ -112,14 +121,13 @@ export const processUpdateQueue = <State>(
           newBaseQueueLast = clone;
           newBaseQueueLast = clone;
         }
-        // 执行计算过程
+
+        // 计算 state
         const action = pending.action;
-        if (action instanceof Function) {
-          newState = action(baseState);
+        if (pending.hasEagerState) {
+          newState = pending.eagerState;
         } else {
-          // react 启动阶段走这里，直接返回 action
-          // 此时的 action 指的是 ReactElement
-          newState = action;
+          newState = basicStateReducer(baseState, action);
         }
       }
       pending = pending.next as Update<State>;
@@ -138,3 +146,14 @@ export const processUpdateQueue = <State>(
 
   return result;
 };
+
+export function basicStateReducer<State>(
+  state: State,
+  action: Action<State>
+): State {
+  if (action instanceof Function) {
+    return action(state);
+  } else {
+    return action;
+  }
+}
