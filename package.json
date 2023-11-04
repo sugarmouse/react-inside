@@ -14,6 +14,7 @@
     "demo:use": "vite serve demo/suspense-use --config scripts/vite/vite.config.js --force",
     "demo:perf": "vite serve demo/performance --config scripts/vite/vite.config.js --force",
     "demo:memo": "vite serve demo/memo --config scripts/vite/vite.config.js --force",
+    "demo:umc": "vite serve demo/useMemoAndCb --config scripts/vite/vite.config.js --force",
     "test": "jest --config scripts/jest/jest.config.js"
   },
   "keywords": [],

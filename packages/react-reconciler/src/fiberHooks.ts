@@ -49,13 +49,13 @@ export interface FCUpdateQueue<State> extends UpdateQueue<State> {
 }
 
 type EffectCallback = () => void;
-type EffectDeps = any[] | null;
+export type HookDeps = any[] | null;
 
 export interface Effect {
   tag: Flags;
   destroy: EffectCallback | void;
   create: EffectCallback | void;
-  deps: EffectDeps;
+  deps: HookDeps;
   // 指向下一个 effect hook, 为了遍历 effect hooks 的时候可以直接遍历到 effect hook
   // 而不是需要到每一个 hook 判断一次 hook 的种类
   next: Effect | null;
@@ -103,6 +103,8 @@ const HooksDispatcherOnMount: Dispatcher = {
   useTransition: mountTransition,
   useRef: mountRef,
   useContext: readContext,
+  useCallback: mountCallback,
+  useMemo: mountMemo,
   use: use
 };
 
@@ -112,8 +114,56 @@ const HooksDispatcherOnUpdate: Dispatcher = {
   useTransition: updateTransition,
   useRef: udpateRef,
   useContext: readContext,
+  useCallback: updateCallback,
+  useMemo: updateMemo,
   use: use
 };
+
+function mountCallback<T>(callback: T, deps?: HookDeps) {
+  const hook = mountWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  hook.memoizedState = [callback, nextDeps];
+  return callback;
+}
+
+function updateCallback<T>(callback: T, deps?: HookDeps) {
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const prevState = hook.memoizedState;
+
+  if (nextDeps !== null) {
+    const prevDeps = prevState[1];
+    if (areHookInputsEqual(nextDeps, prevDeps)) {
+      return prevState[0];
+    }
+  }
+  hook.memoizedState = [callback, nextDeps];
+  return callback;
+}
+
+function mountMemo<T>(nextCreate: () => T, deps?: HookDeps) {
+  const hook = mountWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const nextValue = nextCreate();
+  hook.memoizedState = [nextValue, nextDeps];
+  return nextValue;
+}
+
+function updateMemo<T>(nextCreate: () => T, deps?: HookDeps) {
+  const hook = updateWorkInProgressHook();
+  const nextDeps = deps === undefined ? null : deps;
+  const prevState = hook.memoizedState;
+
+  if (nextDeps !== null) {
+    const prevDeps = prevState[1];
+    if (areHookInputsEqual(nextDeps, prevDeps)) {
+      return prevState[0];
+    }
+  }
+  const nextValue = nextCreate();
+  hook.memoizedState = [nextValue, nextDeps];
+  return nextValue;
+}
 
 function readContext<T>(context: ReactContextType<T>): T {
   const consumer = currentlyRenderingFiber;
@@ -163,7 +213,7 @@ function startTransition(setPending: Dispatch<boolean>, callback: () => void) {
   currentBatchConfig.transition = prevTransition;
 }
 
-function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+function mountEffect(create: EffectCallback | void, deps: HookDeps | void) {
   const hook = mountWorkInProgressHook();
   const nextDeps = deps === undefined ? null : deps;
   (currentlyRenderingFiber as FiberNode).flags |= PassiveEffect;
@@ -176,7 +226,7 @@ function mountEffect(create: EffectCallback | void, deps: EffectDeps | void) {
   );
 }
 
-function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
+function updateEffect(create: EffectCallback | void, deps: HookDeps | void) {
   const hook = updateWorkInProgressHook();
   const nextDeps = deps === undefined ? null : deps;
   let destroy: EffectCallback | void;
@@ -205,7 +255,7 @@ function updateEffect(create: EffectCallback | void, deps: EffectDeps | void) {
   }
 }
 
-function areHookInputsEqual(nextDeps: EffectDeps, prevDeps: EffectDeps) {
+function areHookInputsEqual(nextDeps: HookDeps, prevDeps: HookDeps) {
   if (prevDeps === null || nextDeps === null) {
     return false;
   }
@@ -222,7 +272,7 @@ function pushEffect(
   hookFlags: Flags,
   create: EffectCallback | void,
   destroy: EffectCallback | void,
-  deps: EffectDeps
+  deps: HookDeps
 ) {
   const effect: Effect = {
     tag: hookFlags,

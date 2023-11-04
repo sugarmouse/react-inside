@@ -33,6 +33,14 @@ export const useContext: Dispatcher['useContext'] = (context) => {
   const dispatcher = resolveDispatcher();
   return dispatcher.useContext(context);
 };
+export const useCallback: Dispatcher['useCallback'] = (callback, deps) => {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useCallback(callback, deps);
+};
+export const useMemo: Dispatcher['useMemo'] = (nextCreate, deps) => {
+  const dispatcher = resolveDispatcher();
+  return dispatcher.useMemo(nextCreate, deps);
+};
 export const use: Dispatcher['use'] = (useable) => {
   const dispatcher = resolveDispatcher();
   return dispatcher.use(useable);

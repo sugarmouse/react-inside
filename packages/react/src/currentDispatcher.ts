@@ -1,3 +1,4 @@
+import { HookDeps } from 'react-reconciler/src/fiberHooks';
 import { Action, ReactContextType, Usable } from 'shared/ReactTypes';
 
 export interface Dispatcher {
@@ -6,6 +7,8 @@ export interface Dispatcher {
   useTransition: () => void;
   useRef: <T>(initValue: T) => { current: T };
   useContext: <T>(context: ReactContextType<T>) => T;
+  useMemo: <T>(nextCreate: () => T, deps?: HookDeps) => T;
+  useCallback: <T extends CallableFunction>(callback: T, deps?: HookDeps) => T;
   use: <T>(useable: Usable<T>) => T;
 }
 
