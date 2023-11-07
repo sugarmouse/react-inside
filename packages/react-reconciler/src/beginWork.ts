@@ -32,7 +32,11 @@ import {
   Placement,
   Ref
 } from './fiberFlags';
-import { pushProvider } from './fiberContext';
+import {
+  prepareToReadContext,
+  propagateContextChange,
+  pushProvider
+} from './fiberContext';
 import { pushSuspenseHandler } from './suspenseContext';
 import { shallowEquals } from 'shared/shallowEquals';
 
@@ -98,7 +102,7 @@ export const beginWork = (wip: FiberNode, renderLane: Lane) => {
     case Fragment:
       return updateFragment(wip);
     case ContextProvider:
-      return updateContextProvider(wip);
+      return updateContextProvider(wip, renderLane);
     case SuspenseComponent:
       return updateSuspenseComponent(wip);
     case OffscreenComponent:
@@ -327,7 +331,7 @@ function updateOffscreenComponent(wip: FiberNode) {
   return wip.child;
 }
 
-function updateContextProvider(wip: FiberNode) {
+function updateContextProvider(wip: FiberNode, renderLane: Lane) {
   const providerType = wip.type as ReactProviderType<any>;
   const context = providerType._context;
 
@@ -337,9 +341,25 @@ function updateContextProvider(wip: FiberNode) {
 
   const newProps = wip.pendingProps;
   const newChildren = newProps.children;
+  const oldProps = wip.memoizedProps;
+  const newValue = newProps.value;
 
   // 对 context 赋值操作
-  pushProvider(context, newProps.value);
+  pushProvider(context, newValue);
+
+  if (oldProps !== null) {
+    const oldValue = oldProps.value;
+    if (
+      Object.is(oldValue, newValue) &&
+      oldProps.children === newProps.children
+    ) {
+      return bailoutOnAlreadyFinishedWork(wip, renderLane);
+    } else {
+      // context value 发生了变化
+      // 向下寻找所有消费了当前 context 的 fiber，并且标记 fiber.lanes
+      propagateContextChange(wip, context, renderLane);
+    }
+  }
 
   reconcileChildren(wip, newChildren);
   return wip.child;
@@ -394,6 +414,7 @@ function updateFunctionComponent(
   Component: FiberNode['type'],
   renderLane: Lane
 ) {
+  prepareToReadContext(wip, renderLane);
   // 执行组件的 render
   const nextChildren = renderWithHooks(wip, Component, renderLane);
 

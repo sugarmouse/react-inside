@@ -26,6 +26,7 @@ import { HookHasEffect, Passive } from './hookEffectTags';
 import { trackUsedThenabel as trackUsedThenable } from './thenable';
 import { REACT_CONTEXT_TYPE } from 'shared/ReactSymbols';
 import { markWipReceivedUpdate } from './beginWork';
+import { readContext as readContextOrigin } from './fiberContext';
 
 let currentlyRenderingFiber: FiberNode | null = null;
 let workInProgressHook: Hook | null = null;
@@ -165,13 +166,9 @@ function updateMemo<T>(nextCreate: () => T, deps?: HookDeps) {
   return nextValue;
 }
 
-function readContext<T>(context: ReactContextType<T>): T {
-  const consumer = currentlyRenderingFiber;
-  if (consumer === null) {
-    throw new Error('useContext can only invoked in a function component');
-  }
-  const value = context._currentValue;
-  return value;
+function readContext<Value>(context: ReactContextType<Value>): Value {
+  const consumer = currentlyRenderingFiber as FiberNode;
+  return readContextOrigin(context, consumer);
 }
 
 function mountRef<T>(initValue: T): { current: T } {
